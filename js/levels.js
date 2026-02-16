@@ -350,8 +350,8 @@ function drawMapScreen(now) {
     ctx.restore();
   }
 
-  // Top-right buttons: Fullscreen (hidden if iOS standalone), Info, Reset, Mute
-  if(!(_isIOS && _isStandalone)) {
+  // Top-right buttons: Fullscreen (hidden on iOS entirely), Info, Reset, Mute
+  if(!_isIOS) {
     drawMapButton(MAP_FS_BTN.cx, MAP_FS_BTN.cy, MAP_BTN_R, mapFsHovered, isFullscreen ? 'exitfullscreen' : 'fullscreen');
   }
   drawMapButton(MAP_INFO_BTN.cx, MAP_INFO_BTN.cy, MAP_BTN_R, mapInfoHovered, 'info');
@@ -476,10 +476,12 @@ function drawMapButton(cx, cy, r, hovered, iconType) {
 }
 
 function handleMapClick(x, y) {
-  const fb = MAP_FS_BTN;
-  if(Math.sqrt((x - fb.cx) * (x - fb.cx) + (y - fb.cy) * (y - fb.cy)) <= fb.r) {
-    toggleFullscreen();
-    return;
+  if(!_isIOS) {
+    const fb = MAP_FS_BTN;
+    if(Math.sqrt((x - fb.cx) * (x - fb.cx) + (y - fb.cy) * (y - fb.cy)) <= fb.r) {
+      toggleFullscreen();
+      return;
+    }
   }
   const mb = MAP_MUTE_BTN;
   if(Math.sqrt((x - mb.cx) * (x - mb.cx) + (y - mb.cy) * (y - mb.cy)) <= mb.r) {
@@ -762,19 +764,21 @@ function drawScene2Screen(now) {
   ctx.fillText('Replay Scene 1', btn.x, btn.y);
   ctx.restore();
 
-  // Top-right buttons: Fullscreen (hidden if iOS standalone), Mute
-  if(!(_isIOS && _isStandalone)) {
+  // Top-right buttons: Fullscreen (hidden on iOS entirely), Mute
+  if(!_isIOS) {
     drawMapButton(GAME_FS_BTN.cx, GAME_FS_BTN.cy, MAP_BTN_R, false, isFullscreen ? 'exitfullscreen' : 'fullscreen');
   }
   drawMapButton(GAME_MUTE_BTN.cx, GAME_MUTE_BTN.cy, MAP_BTN_R, false, musicMuted ? 'muted' : 'unmuted');
 }
 
 function handleScene2Click(x, y) {
-  // Fullscreen button
-  const fsb = GAME_FS_BTN;
-  if(Math.sqrt((x - fsb.cx) * (x - fsb.cx) + (y - fsb.cy) * (y - fsb.cy)) <= fsb.r) {
-    toggleFullscreen();
-    return;
+  // Fullscreen button (hidden on iOS)
+  if(!_isIOS) {
+    const fsb = GAME_FS_BTN;
+    if(Math.sqrt((x - fsb.cx) * (x - fsb.cx) + (y - fsb.cy) * (y - fsb.cy)) <= fsb.r) {
+      toggleFullscreen();
+      return;
+    }
   }
   // Mute button
   const gm = GAME_MUTE_BTN;

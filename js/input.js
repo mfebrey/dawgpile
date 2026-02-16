@@ -74,10 +74,12 @@ function handlePointerDown(x, y) {
       toggleMute();
       return;
     }
-    const fsb = GAME_FS_BTN;
-    if(Math.sqrt((x - fsb.cx) * (x - fsb.cx) + (y - fsb.cy) * (y - fsb.cy)) <= fsb.r) {
-      toggleFullscreen();
-      return;
+    if(!_isIOS) {
+      const fsb = GAME_FS_BTN;
+      if(Math.sqrt((x - fsb.cx) * (x - fsb.cx) + (y - fsb.cy) * (y - fsb.cy)) <= fsb.r) {
+        toggleFullscreen();
+        return;
+      }
     }
   }
 
@@ -171,7 +173,7 @@ function handlePointerMove(x, y) {
     mapMuteHovered = (Math.sqrt((x - mb.cx) * (x - mb.cx) + (y - mb.cy) * (y - mb.cy)) <= mb.r);
     mapInfoHovered = (Math.sqrt((x - ib.cx) * (x - ib.cx) + (y - ib.cy) * (y - ib.cy)) <= ib.r);
     const fsb = MAP_FS_BTN;
-    mapFsHovered = (Math.sqrt((x - fsb.cx) * (x - fsb.cx) + (y - fsb.cy) * (y - fsb.cy)) <= fsb.r);
+    mapFsHovered = !_isIOS && (Math.sqrt((x - fsb.cx) * (x - fsb.cx) + (y - fsb.cy) * (y - fsb.cy)) <= fsb.r);
     for(let i = 0; i < MAP_LEVELS.length; i++) {
       const lv = MAP_LEVELS[i];
       const edx = (x - lv.x) / (MAP_OVAL_RX + 10);
@@ -384,11 +386,7 @@ document.getElementById('restartBtn').addEventListener('click', restartFromGameO
 // FULLSCREEN
 // ============================================================
 function toggleFullscreen() {
-  if(_isIOS) {
-    // iOS doesn't support fullscreen API - show Add to Home Screen prompt
-    iosPromptVisible = !iosPromptVisible;
-    return;
-  }
+  if(_isIOS) return; // iOS doesn't support fullscreen API - button is hidden
   if(!document.fullscreenElement && !document.webkitFullscreenElement) {
     const elem = document.documentElement;
     if(elem.requestFullscreen) {

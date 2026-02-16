@@ -21,14 +21,26 @@ function resizeGame() {
   const gameAspect = W / H;
   const winW = window.innerWidth;
   const winH = window.innerHeight;
-  const winAspect = winW / winH;
+  const isMobile = winW < 900;
 
+  let maxW, maxH;
+  if(isMobile) {
+    // Mobile: fill the screen
+    maxW = winW;
+    maxH = winH;
+  } else {
+    // Desktop: 80% of viewport with even margins
+    maxW = winW * 0.8;
+    maxH = winH * 0.8;
+  }
+
+  const maxAspect = maxW / maxH;
   let displayW, displayH;
-  if(winAspect > gameAspect) {
-    displayH = winH;
+  if(maxAspect > gameAspect) {
+    displayH = maxH;
     displayW = displayH * gameAspect;
   } else {
-    displayW = winW;
+    displayW = maxW;
     displayH = displayW / gameAspect;
   }
 

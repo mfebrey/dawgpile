@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git push:*)",
+      "Bash(python3:*)",
+      "Bash(python replace_images.py:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(start \"\" \"/c/Users/morga/OneDrive/Desktop/Work/Dawg Pile/Game files/dawg_pile_v2.html\")",
+      "Bash(python -m http.server:*)",
+      "Bash(start \"\" \"http://localhost:8080/dawg_pile_v2.html\")",
+      "Bash(xxd:*)",
+      "Bash(python server.py:*)",
+      "Bash(curl:*)",
+      "Bash(node -c:*)",
+      "Bash(python:*)",
+      "Bash(file:*)",
+      "Bash(wc:*)",
+      "Bash(git pull:*)"
+    ]
+  }
+}

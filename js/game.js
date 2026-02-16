@@ -717,9 +717,9 @@ function draw(timestamp) {
     ctx.fillText(String(acorns), sX + 38, row2Y);
   }
 
-  // ---- TOP RIGHT: Fullscreen (hidden if iOS standalone) + Mute buttons ----
+  // ---- TOP RIGHT: Fullscreen (hidden on iOS entirely) + Mute buttons ----
   {
-    if(!(_isIOS && _isStandalone)) {
+    if(!_isIOS) {
       const fsb = GAME_FS_BTN;
       drawMapButton(fsb.cx, fsb.cy, fsb.r, false, isFullscreen ? 'exitfullscreen' : 'fullscreen');
     }
