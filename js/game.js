@@ -497,7 +497,6 @@ function draw(timestamp) {
     const floatSpeed = now / 250;
     const ballFloatY = ballGrabbed ? 0 : Math.sin(floatSpeed) * floatAmp;
     const ringFloatY = ballGrabbed ? 0 : Math.sin(floatSpeed) * -floatAmp;
-    const ringPulse = ballGrabbed ? 1.0 : 0.7 + 0.3 * ((Math.sin(floatSpeed) + 1) / 2);
     const bx = BALL_ORIGIN_X;
     const by = BALL_DRAW_Y + ballFloatY;
     const ringW = ballSize * 0.78;
@@ -508,14 +507,13 @@ function draw(timestamp) {
     // BACK half of ring (behind ball)
     if(!ballGrabbed) {
       ctx.save();
-      ctx.globalAlpha = ringPulse * 0.35;
-      ctx.strokeStyle = '#ffcc44';
+      ctx.globalAlpha = 1.0;
+      ctx.strokeStyle = '#ff6b00';
       ctx.lineWidth = 10;
       ctx.beginPath();
       ctx.ellipse(bx, ringY, ringW, ringH, 0, Math.PI, Math.PI * 2);
       ctx.stroke();
-      ctx.globalAlpha = ringPulse * 0.55;
-      ctx.strokeStyle = '#ffdd66';
+      ctx.strokeStyle = '#ff8800';
       ctx.lineWidth = 4;
       ctx.beginPath();
       ctx.ellipse(bx, ringY, ringW - 3, ringH - 1, 0, Math.PI, Math.PI * 2);
@@ -533,14 +531,13 @@ function draw(timestamp) {
     // FRONT half of ring (in front of ball)
     if(!ballGrabbed) {
       ctx.save();
-      ctx.globalAlpha = ringPulse * 0.55;
-      ctx.strokeStyle = '#ffcc44';
+      ctx.globalAlpha = 1.0;
+      ctx.strokeStyle = '#ff6b00';
       ctx.lineWidth = 10;
       ctx.beginPath();
       ctx.ellipse(bx, ringY, ringW, ringH, 0, 0, Math.PI);
       ctx.stroke();
-      ctx.globalAlpha = ringPulse * 0.75;
-      ctx.strokeStyle = '#ffdd66';
+      ctx.strokeStyle = '#ff8800';
       ctx.lineWidth = 4;
       ctx.beginPath();
       ctx.ellipse(bx, ringY, ringW - 3, ringH - 1, 0, 0, Math.PI);
@@ -688,7 +685,7 @@ function draw(timestamp) {
 
     // ---- TOP LEFT: Score + Acorns + Packs panel ----
     const sX = 8, sY = 6;
-    const panW = 140, panH = 94;
+    const panW = 140, panH = 54;
 
     ctx.save();
     ctx.fillStyle = 'rgba(200,140,50,0.8)';
@@ -714,15 +711,6 @@ function draw(timestamp) {
     ctx.fillStyle = '#fff';
     ctx.fillText('\u{1F330}', sX + 12, row2Y);
     ctx.fillText(String(acorns), sX + 38, row2Y);
-
-    const row3Y = sY + 64;
-    ctx.font = 'bold 11px Arial';
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.fillText('Packs', sX + 10, row3Y);
-    const row4Y = sY + 80;
-    ctx.font = 'bold 12px Arial';
-    ctx.fillStyle = '#ffe080';
-    ctx.fillText('3:' + packStats[3] + ' 4:' + packStats[4] + ' 5:' + packStats[5], sX + 10, row4Y);
   }
 
   // ---- TOP RIGHT: Fullscreen + Mute buttons ----

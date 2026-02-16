@@ -127,11 +127,14 @@ function checkAdjacentBonus(landRow, landCol, breed, orientation, skipSet) {
       const cell = getCell(nr, nc);
       if(cell && cell.breed === breed) {
         bonus += 5;
-        const fx = GRID_LEFT + ((dc.col + nc) / 2 + 0.5) * CELL_SIZE;
-        const fy = GRID_TOP + ((dc.row + nr) / 2 + 0.5) * CELL_SIZE;
-        spawnFloat('Buddies! +5', fx, fy, '#fff', 20, 'rgba(60,180,120,0.85)');
       }
     }
   }
-  if(bonus > 0) { score += bonus; updateUI(); }
+  if(bonus > 0) {
+    score += bonus;
+    updateUI();
+    const cx = GRID_LEFT + (dogCells[0].col + (orientation === 'h' ? 1 : 0.5)) * CELL_SIZE;
+    const cy = GRID_TOP + (dogCells[0].row + (orientation === 'h' ? 0.5 : 1)) * CELL_SIZE;
+    spawnFloat('Buddies! +' + bonus, cx, cy, '#fff', 20, 'rgba(60,180,120,0.85)');
+  }
 }

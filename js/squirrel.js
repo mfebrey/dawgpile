@@ -70,10 +70,11 @@ function hitSquirrel() {
   squirrelHitTime = performance.now();
   stopSquirrelMusicOverride();
   playSfx(squirrelWinSound);
+  score += 50;
   acorns++;
   updateUI();
   spawnFloat("Got 'em!", W / 2, H / 2 - 40, '#ffee00', 36, 'rgba(255,140,0,0.9)');
-  spawnFloat('+1 \u{1F330}', W / 2, H / 2, '#fff', 22, 'rgba(180,120,30,0.85)');
+  spawnFloat('+50', W / 2, H / 2, '#ffd700', 28, 'rgba(0,0,0,0.7)');
 }
 
 function collapsePile() {

@@ -110,12 +110,12 @@ function drawInstructionsScreen() {
   // Container box
   const boxX = 30, boxY = 20, boxW = W - 60, boxH = H - 50;
   ctx.save();
-  ctx.fillStyle = 'rgba(200,140,50,0.9)';
+  ctx.fillStyle = 'rgba(70,160,200,0.92)';
   ctx.shadowColor = 'rgba(0,0,0,0.5)';
   ctx.shadowBlur = 16;
   ctx.beginPath(); ctx.roundRect(boxX, boxY, boxW, boxH, 16); ctx.fill();
   ctx.shadowBlur = 0;
-  ctx.strokeStyle = 'rgba(255,220,140,0.5)';
+  ctx.strokeStyle = 'rgba(180,230,255,0.5)';
   ctx.lineWidth = 2;
   ctx.beginPath(); ctx.roundRect(boxX, boxY, boxW, boxH, 16); ctx.stroke();
   ctx.restore();
@@ -134,9 +134,9 @@ function drawInstructionsScreen() {
   const totalPanelW = panelW * 3 + panelGap * 2;
   const panelStartX = (W - totalPanelW) / 2;
   const panels = [
-    { label: 'THROW', desc: 'Drag ball to\naim and release\nto throw', color: '#4a9' },
-    { label: 'SWAP', desc: 'Tap two adjacent\ndogs to swap\ntheir positions', color: '#49a' },
-    { label: 'SCOOT', desc: 'Drag a dog\nleft or right\nto nudge it', color: '#a94' }
+    { label: 'Throw the Ball', steps: ['Click the ball', 'Drag mouse to grid', 'Release'], color: '#4a9' },
+    { label: 'Swap Two Dogs', steps: ['Click one dog', 'Click an adjacent dog'], color: '#49a' },
+    { label: 'Scoot Over', steps: ['Click a dog', 'Drag left or right', 'Release'], color: '#a94' }
   ];
   const imgNames = ['throw', 'swap', 'scoot'];
 
@@ -167,17 +167,18 @@ function drawInstructionsScreen() {
 
     // Label below image
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 18px Arial';
+    ctx.font = 'bold 16px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillText(p.label, px + panelW / 2, panelY + panelH + 8);
 
-    // Description
+    // Numbered steps
     ctx.fillStyle = 'rgba(255,255,255,0.85)';
     ctx.font = '13px Arial';
-    const lines = p.desc.split('\n');
-    for(let l = 0; l < lines.length; l++) {
-      ctx.fillText(lines[l], px + panelW / 2, panelY + panelH + 30 + l * 16);
+    ctx.textAlign = 'left';
+    const stepsX = px + 12;
+    for(let s = 0; s < p.steps.length; s++) {
+      ctx.fillText((s + 1) + '. ' + p.steps[s], stepsX, panelY + panelH + 30 + s * 16);
     }
   }
 
@@ -315,7 +316,7 @@ function drawMapScreen(now) {
     } else if(isCurrent) {
       // Active level: animated tennis ball bouncing above position
       const ballBounce = Math.abs(Math.sin(now / 350 * Math.PI)) * 12;
-      const ballY = lv.y - MAP_OVAL_RY - 22 - ballBounce;
+      const ballY = lv.y - MAP_OVAL_RY - 2 - ballBounce;
       const ballSize = 28;
       if(tennisLoaded && tennisImg.complete) {
         ctx.drawImage(tennisImg, lv.x - ballSize / 2, ballY - ballSize / 2, ballSize, ballSize);
@@ -348,18 +349,6 @@ function drawMapScreen(now) {
 
     ctx.restore();
   }
-
-  // Scene 1 header
-  ctx.save();
-  ctx.font = 'bold 22px Arial';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
-  ctx.strokeStyle = 'rgba(0,0,0,0.7)';
-  ctx.lineWidth = 4;
-  ctx.strokeText('Scene 1: Bone Island', 12, 10);
-  ctx.fillStyle = '#fff';
-  ctx.fillText('Scene 1: Bone Island', 12, 10);
-  ctx.restore();
 
   // Top-right buttons: Fullscreen, Info, Reset, Mute
   drawMapButton(MAP_FS_BTN.cx, MAP_FS_BTN.cy, MAP_BTN_R, mapFsHovered, isFullscreen ? 'exitfullscreen' : 'fullscreen');
@@ -556,7 +545,7 @@ function showLevelStart() {
     ? '<div style="font-size:16px;margin:6px 0;color:#ffd700">Your Best: ' + best.toLocaleString() + '</div>'
     : '';
   document.getElementById('level-goal-text').innerHTML =
-    'Need ' + thresholds[0].toLocaleString() + ' points for \u2B50' + bestText;
+    'Need ' + thresholds[0].toLocaleString() + ' pts to advance' + bestText;
   document.getElementById('level-start-screen').style.display = 'flex';
   gameRunning = false;
   timerRunning = false;
