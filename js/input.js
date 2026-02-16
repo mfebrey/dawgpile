@@ -62,6 +62,7 @@ function performSwap(cellsA, cellsB) {
 }
 
 function handlePointerDown(x, y) {
+  if(iosPromptVisible) { handleIOSPromptClick(x, y); return; }
   if(iris.active) return;
   if(gameScreen === SCREEN.INSTRUCTIONS) { handleInstructionsClick(x, y); return; }
   if(gameScreen === SCREEN.WELCOME) { handleWelcomeClick(x, y); return; }
@@ -383,6 +384,11 @@ document.getElementById('restartBtn').addEventListener('click', restartFromGameO
 // FULLSCREEN
 // ============================================================
 function toggleFullscreen() {
+  if(_isIOS) {
+    // iOS doesn't support fullscreen API - show Add to Home Screen prompt
+    iosPromptVisible = !iosPromptVisible;
+    return;
+  }
   if(!document.fullscreenElement && !document.webkitFullscreenElement) {
     const elem = document.documentElement;
     if(elem.requestFullscreen) {
@@ -411,15 +417,92 @@ function onFullscreenChange() {
 document.addEventListener('fullscreenchange', onFullscreenChange);
 document.addEventListener('webkitfullscreenchange', onFullscreenChange);
 
-// Auto-prompt fullscreen on mobile first touch
+// Draw iOS "Add to Home Screen" prompt overlay
+function drawIOSPrompt() {
+  if(!iosPromptVisible) return;
+  // Dim background
+  ctx.fillStyle = 'rgba(0,0,0,0.75)';
+  ctx.fillRect(0, 0, W, H);
+
+  // Box
+  const bx = W / 2 - 170, by = H / 2 - 110, bw = 340, bh = 220;
+  ctx.save();
+  ctx.fillStyle = 'rgba(70,160,200,0.95)';
+  ctx.shadowColor = 'rgba(0,0,0,0.5)';
+  ctx.shadowBlur = 16;
+  ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 14); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'rgba(180,230,255,0.5)';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 14); ctx.stroke();
+  ctx.restore();
+
+  // Title
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 22px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Go Fullscreen on iPhone', W / 2, by + 30);
+
+  // Steps
+  ctx.font = '16px Arial';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  const sx = bx + 30, sy = by + 65;
+  ctx.fillText('1. Tap the Share button  \u{1F4E4}', sx, sy);
+  ctx.fillText('2. Tap "Add to Home Screen"', sx, sy + 30);
+  ctx.fillText('3. Open from your home screen', sx, sy + 60);
+
+  ctx.font = '13px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.fillText('The app will launch without the browser bar!', W / 2, sy + 95);
+
+  // "Got it!" button
+  const btn = IOS_PROMPT_BTN;
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.4)';
+  ctx.shadowBlur = 8;
+  ctx.fillStyle = '#ff6b35';
+  ctx.beginPath();
+  ctx.roundRect(btn.x - btn.w / 2, btn.y - btn.h / 2, btn.w, btn.h, 8);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(btn.x - btn.w / 2, btn.y - btn.h / 2, btn.w, btn.h, 8);
+  ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 18px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Got it!', btn.x, btn.y);
+  ctx.restore();
+}
+
+// Handle click on iOS prompt "Got it!" button
+function handleIOSPromptClick(x, y) {
+  if(!iosPromptVisible) return false;
+  const btn = IOS_PROMPT_BTN;
+  if(x >= btn.x - btn.w / 2 && x <= btn.x + btn.w / 2 &&
+     y >= btn.y - btn.h / 2 && y <= btn.y + btn.h / 2) {
+    iosPromptVisible = false;
+    return true;
+  }
+  // Clicking anywhere outside the button also dismisses
+  iosPromptVisible = false;
+  return true;
+}
+
+// Auto-prompt fullscreen on mobile first touch (skip iOS)
 canvas.addEventListener('touchstart', function onFirstTouch() {
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  if(_isIOS) return; // iOS doesn't support fullscreen API
+  const isMobile = /Android/i.test(navigator.userAgent);
   if(isMobile && !document.fullscreenElement && !document.webkitFullscreenElement) {
     const elem = document.documentElement;
     if(elem.requestFullscreen) {
       elem.requestFullscreen().catch(() => {});
-    } else if(elem.webkitRequestFullscreen) {
-      elem.webkitRequestFullscreen();
     }
   }
   canvas.removeEventListener('touchstart', onFirstTouch);

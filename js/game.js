@@ -8,23 +8,27 @@ function draw(timestamp) {
   if(gameScreen === SCREEN.WELCOME) {
     drawWelcomeScreen();
     drawIris();
+    drawIOSPrompt();
     requestAnimationFrame(draw);
     return;
   }
   if(gameScreen === SCREEN.INSTRUCTIONS) {
     drawInstructionsScreen();
+    drawIOSPrompt();
     requestAnimationFrame(draw);
     return;
   }
   if(gameScreen === SCREEN.MAP) {
     drawMapScreen(now);
     drawIris();
+    drawIOSPrompt();
     requestAnimationFrame(draw);
     return;
   }
   if(gameScreen === SCREEN.SCENE2) {
     drawScene2Screen(now);
     drawIris();
+    drawIOSPrompt();
     requestAnimationFrame(draw);
     return;
   }
@@ -713,10 +717,12 @@ function draw(timestamp) {
     ctx.fillText(String(acorns), sX + 38, row2Y);
   }
 
-  // ---- TOP RIGHT: Fullscreen + Mute buttons ----
+  // ---- TOP RIGHT: Fullscreen (hidden if iOS standalone) + Mute buttons ----
   {
-    const fsb = GAME_FS_BTN;
-    drawMapButton(fsb.cx, fsb.cy, fsb.r, false, isFullscreen ? 'exitfullscreen' : 'fullscreen');
+    if(!(_isIOS && _isStandalone)) {
+      const fsb = GAME_FS_BTN;
+      drawMapButton(fsb.cx, fsb.cy, fsb.r, false, isFullscreen ? 'exitfullscreen' : 'fullscreen');
+    }
     const gm = GAME_MUTE_BTN;
     drawMapButton(gm.cx, gm.cy, gm.r, false, musicMuted ? 'muted' : 'unmuted');
   }
@@ -753,6 +759,7 @@ function draw(timestamp) {
   });
 
   drawIris();
+  drawIOSPrompt();
   requestAnimationFrame(draw);
 }
 

@@ -350,8 +350,10 @@ function drawMapScreen(now) {
     ctx.restore();
   }
 
-  // Top-right buttons: Fullscreen, Info, Reset, Mute
-  drawMapButton(MAP_FS_BTN.cx, MAP_FS_BTN.cy, MAP_BTN_R, mapFsHovered, isFullscreen ? 'exitfullscreen' : 'fullscreen');
+  // Top-right buttons: Fullscreen (hidden if iOS standalone), Info, Reset, Mute
+  if(!(_isIOS && _isStandalone)) {
+    drawMapButton(MAP_FS_BTN.cx, MAP_FS_BTN.cy, MAP_BTN_R, mapFsHovered, isFullscreen ? 'exitfullscreen' : 'fullscreen');
+  }
   drawMapButton(MAP_INFO_BTN.cx, MAP_INFO_BTN.cy, MAP_BTN_R, mapInfoHovered, 'info');
   drawMapButton(MAP_RESET_BTN.cx, MAP_RESET_BTN.cy, MAP_BTN_R, mapResetHovered, 'reset');
   drawMapButton(MAP_MUTE_BTN.cx, MAP_MUTE_BTN.cy, MAP_BTN_R, mapMuteHovered, musicMuted ? 'muted' : 'unmuted');
@@ -760,8 +762,10 @@ function drawScene2Screen(now) {
   ctx.fillText('Replay Scene 1', btn.x, btn.y);
   ctx.restore();
 
-  // Top-right buttons: Fullscreen, Mute
-  drawMapButton(GAME_FS_BTN.cx, GAME_FS_BTN.cy, MAP_BTN_R, false, isFullscreen ? 'exitfullscreen' : 'fullscreen');
+  // Top-right buttons: Fullscreen (hidden if iOS standalone), Mute
+  if(!(_isIOS && _isStandalone)) {
+    drawMapButton(GAME_FS_BTN.cx, GAME_FS_BTN.cy, MAP_BTN_R, false, isFullscreen ? 'exitfullscreen' : 'fullscreen');
+  }
   drawMapButton(GAME_MUTE_BTN.cx, GAME_MUTE_BTN.cy, MAP_BTN_R, false, musicMuted ? 'muted' : 'unmuted');
 }
 

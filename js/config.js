@@ -283,6 +283,10 @@ const MAP_FS_BTN = { cx: W - MAP_BTN_R * 7 - 32, cy: MAP_BTN_TOP_Y, r: MAP_BTN_R
 const GAME_FS_BTN = { cx: W - MAP_BTN_R * 3 - 16, cy: MAP_BTN_TOP_Y, r: MAP_BTN_R };
 let mapFsHovered = false;
 let isFullscreen = false;
+const _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+const _isStandalone = window.navigator.standalone === true;
+let iosPromptVisible = false;
+const IOS_PROMPT_BTN = { x: W / 2, y: H / 2 + 100, w: 140, h: 40 };
 
 // Throw animation state
 let throwBallArc = [];
