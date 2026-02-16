@@ -3,74 +3,285 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dawg Pile - Match 3</title>
+<title>Dawg Pile</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{display:flex;justify-content:center;align-items:center;min-height:100vh;background:#2a4858;font-family:'Arial',sans-serif;overflow:hidden;}
 #game{position:relative;}
 canvas{display:block;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.3);}
-#ui{position:absolute;top:20px;left:20px;right:20px;display:flex;justify-content:space-between;align-items:center;color:#fff;font-size:24px;font-weight:bold;text-shadow:2px 2px 4px rgba(0,0,0,0.5);pointer-events:none;}
-#title-screen,#gameover-screen{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;justify-content:center;align-items:center;background:rgba(0,0,0,0.7);border-radius:12px;}
-#title-screen h1,#gameover-screen h1{color:#fff;font-size:48px;margin-bottom:20px;text-shadow:3px 3px 6px rgba(0,0,0,0.8);}
-#title-screen p{color:#fff;font-size:18px;margin-bottom:30px;text-align:center;max-width:500px;line-height:1.6;}
+#ui{position:absolute;top:8px;left:20px;right:20px;display:flex;justify-content:space-between;align-items:center;color:#fff;font-size:22px;font-weight:bold;text-shadow:2px 2px 4px rgba(0,0,0,0.5);pointer-events:none;}
+.overlay{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;justify-content:center;align-items:center;background:rgba(0,0,0,0.7);border-radius:12px;}
+.overlay h1{color:#fff;font-size:48px;margin-bottom:20px;text-shadow:3px 3px 6px rgba(0,0,0,0.8);}
+.overlay p,.overlay .info{color:#fff;font-size:18px;margin-bottom:20px;text-align:center;max-width:500px;line-height:1.6;}
+.overlay .stats{color:#ffd700;font-size:24px;margin:10px 0;}
 button{background:#ff6b35;color:#fff;border:none;padding:15px 40px;font-size:20px;font-weight:bold;border-radius:8px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.3);transition:all 0.2s;pointer-events:auto;}
 button:hover{background:#ff8555;transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,0.4);}
 button:active{transform:translateY(0);}
-#final-score{color:#ffd700;font-size:36px;margin:10px 0;}
 </style>
 </head>
 <body>
 <div id="game">
 <canvas id="canvas" width="720" height="560"></canvas>
-<div id="ui">
-<div>Score: <span id="score">0</span></div>
-<div id="rotate-hint" style="font-size:16px;opacity:0.8;">Click to rotate</div>
+<div id="ui" style="justify-content:flex-end;">
+<div style="display:none;"><div>&#x1F3C6; <span id="score">0</span></div><div>&#x1F330; <span id="acorns">0/5</span></div></div>
 </div>
-<div id="title-screen">
-<h1>🐕 DAWG PILE 🐕</h1>
-<p>Stack the dogs and match 3 or more of the same breed!<br>Click to rotate before dropping.<br>Tap two adjacent dogs to swap.</p>
-<button id="startBtn">START GAME</button>
+<div id="title-screen" class="overlay" style="display:none;"></div>
+<div id="level-start-screen" class="overlay" style="display:none;">
+<h1 id="level-title">Level 1</h1>
+<p id="level-goal-text"></p>
+<button id="goBtn">GO!</button>
 </div>
-<div id="gameover-screen" style="display:none;">
+<div id="level-complete-screen" class="overlay" style="display:none;">
+<h1>&#x2B50; Level Complete! &#x2B50;</h1>
+<div class="stats" id="complete-stats"></div>
+<button id="nextLevelBtn">NEXT LEVEL</button>
+</div>
+<div id="time-up-screen" class="overlay" style="display:none;">
+<h1>&#x23F0; Time's Up!</h1>
+<div class="stats" id="timeup-stats"></div>
+<button id="retryBtn">TRY AGAIN</button>
+</div>
+<div id="gameover-screen" class="overlay" style="display:none;">
 <h1>GAME OVER</h1>
-<div id="final-score">0</div>
+<div class="stats" id="final-score">0</div>
 <button id="restartBtn">PLAY AGAIN</button>
 </div>
 </div>
 <script>
-// This will be populated with the full game code
 
 // ============================================================
 // IMAGES
 // ============================================================
-const bgImg = new Image();
-bgImg.src = 'img/background-v1.webp';
+const bgImgs = [];
+for(let i = 0; i < 4; i++) {
+  const img = new Image();
+  img._loaded = false;
+  img.onload = function() { this._loaded = true; };
+  img.src = 'img/background-v' + (i + 1) + '.webp';
+  bgImgs[i] = img;
+}
+const bgImg = bgImgs[0];
 let bgLoaded = false;
-bgImg.onload = () => bgLoaded = true;
+bgImgs[0].addEventListener('load', () => { bgLoaded = true; });
 
 const treeImg = new Image();
-treeImg.src = 'img/tree.webp';
 let treeLoaded = false;
 treeImg.onload = () => treeLoaded = true;
+treeImg.src = 'img/tree.webp';
 
 const tennisImg = new Image();
-tennisImg.src = 'img/tennis-ball.webp';
 let tennisLoaded = false;
 tennisImg.onload = () => tennisLoaded = true;
+tennisImg.src = 'img/tennis-ball.webp';
 
-// Dog breed images
-const dogImages = {};
+const arrowImg = new Image();
+let arrowLoaded = false;
+arrowImg.onload = () => { arrowLoaded = true; console.log('Arrow image LOADED:', arrowImg.naturalWidth, 'x', arrowImg.naturalHeight); };
+arrowImg.onerror = (e) => console.error('Arrow image FAILED to load:', e);
+arrowImg.src = 'img/arrow.webp';
+
+const sqStepImg = new Image();
+let sqStepLoaded = false;
+sqStepImg.onload = () => { sqStepLoaded = true; console.log('Squirrel step image loaded'); };
+sqStepImg.onerror = () => console.error('FAILED to load sq-step.webp');
+sqStepImg.src = 'img/dogs/sq-step.webp';
+
+const sqJumpImg = new Image();
+let sqJumpLoaded = false;
+sqJumpImg.onload = () => { sqJumpLoaded = true; console.log('Squirrel jump image loaded'); };
+sqJumpImg.onerror = () => console.error('FAILED to load sq-jump.webp');
+sqJumpImg.src = 'img/dogs/sq-jump.webp';
+
+const acornImg = new Image();
+let acornLoaded = false;
+acornImg.onload = () => { acornLoaded = true; };
+acornImg.src = 'img/dogs/acorn.webp';
+
+const sqAcornImg = new Image();
+let sqAcornLoaded = false;
+sqAcornImg.onload = () => { sqAcornLoaded = true; };
+sqAcornImg.src = 'img/dogs/sq-acorn.webp';
+
+const welcomeImg = new Image();
+let welcomeLoaded = false;
+welcomeImg.onload = () => { welcomeLoaded = true; };
+welcomeImg.src = 'img/welcome.webp';
+
+const mapImg = new Image();
+let mapLoaded = false;
+mapImg.onload = () => { mapLoaded = true; };
+mapImg.src = 'img/map-level-1.webp';
+
 const dogNames = ['chihuahua', 'corgi', 'dachshund', 'frenchie', 'german-sheppard', 'golden-retriever', 'husky', 'mutt', 'poodle', 'sheep-dog'];
-dogImages['chihuahua'] = new Image(); dogImages['chihuahua'].src = 'img/dogs/sitting/chihuahua-sitting.webp';
-dogImages['corgi'] = new Image(); dogImages['corgi'].src = 'img/dogs/sitting/corgie-sitting.webp';
-dogImages['dachshund'] = new Image(); dogImages['dachshund'].src = 'img/dogs/sitting/dachshund-sitting.webp';
-dogImages['frenchie'] = new Image(); dogImages['frenchie'].src = 'img/dogs/sitting/frenchie-sitting.webp';
-dogImages['german-sheppard'] = new Image(); dogImages['german-sheppard'].src = 'img/dogs/sitting/german-sitting.webp';
-dogImages['golden-retriever'] = new Image(); dogImages['golden-retriever'].src = 'img/dogs/sitting/golden-sitting.webp';
-dogImages['husky'] = new Image(); dogImages['husky'].src = 'img/dogs/sitting/huskie-sitting.webp';
-dogImages['mutt'] = new Image(); dogImages['mutt'].src = 'img/dogs/sitting/mutt-sitting.webp';
-dogImages['poodle'] = new Image(); dogImages['poodle'].src = 'img/dogs/sitting/poodle-sitting.webp';
-dogImages['sheep-dog'] = new Image(); dogImages['sheep-dog'].src = 'img/dogs/sitting/sheepdog-sitting.webp';
+
+const dogSittingImages = {};
+const dogSittingFileMap = {
+  'chihuahua': 'chihuahua-sitting', 'corgi': 'corgie-sitting',
+  'dachshund': 'dachshund-sitting', 'frenchie': 'frenchie-sitting',
+  'german-sheppard': 'german-sitting', 'golden-retriever': 'golden-sitting',
+  'husky': 'huskie-sitting', 'mutt': 'mutt-sitting',
+  'poodle': 'poodle-sitting', 'sheep-dog': 'sheepdog-sitting'
+};
+dogNames.forEach(name => {
+  dogSittingImages[name] = new Image();
+  dogSittingImages[name].src = 'img/dogs/sitting/' + dogSittingFileMap[name] + '.webp';
+});
+
+const dogJumpingImages = {};
+const dogJumpingFileMap = {
+  'chihuahua': 'chihuahua-jumping', 'corgi': 'corgi-jumping',
+  'dachshund': 'dachshund-jumping', 'frenchie': 'frenchie-jumping',
+  'german-sheppard': 'german-jumping', 'golden-retriever': 'golden-jumping',
+  'husky': 'husky-jumping', 'mutt': 'mutt-jumping',
+  'poodle': 'poodle-jumping', 'sheep-dog': 'sheepdog-jumping'
+};
+dogNames.forEach(name => {
+  dogJumpingImages[name] = new Image();
+  dogJumpingImages[name].src = 'img/dogs/jumping/' + dogJumpingFileMap[name] + '.webp';
+});
+
+const dogLyingImages = {};
+const dogLyingFileMap = {
+  'chihuahua': 'chihuahua-lying', 'corgi': 'corgi-lying',
+  'dachshund': 'dachshund-lying', 'frenchie': 'frenchie-lying',
+  'german-sheppard': 'german-lying', 'golden-retriever': 'golden-lying',
+  'husky': 'husky-lying', 'mutt': 'mutt-lying',
+  'poodle': 'poodle-lying', 'sheep-dog': 'sheepdog-lying'
+};
+dogNames.forEach(name => {
+  dogLyingImages[name] = new Image();
+  dogLyingImages[name].src = 'img/dogs/lying/' + dogLyingFileMap[name] + '.webp';
+});
+
+// ============================================================
+// AUDIO
+// ============================================================
+const bgMusic = new Audio('sound/background-sound-v1.mp3');
+bgMusic.loop = true;
+bgMusic.volume = 0.4;
+let musicMuted = false;
+
+// Level-specific music
+const MUSIC_VOLUME = 0.4;
+const CROSSFADE_MS = 300;
+const levelMusicSrcs = ['sound/park.mp3', 'sound/forest.mp3', 'sound/desert.mp3', 'sound/space.mp3'];
+const levelMusicTracks = levelMusicSrcs.map(src => {
+  const a = new Audio(src);
+  a.loop = true;
+  a.volume = 0;
+  a.preload = 'auto';
+  return a;
+});
+const squirrelMusic = new Audio('sound/squirrel.mp3');
+squirrelMusic.loop = true;
+squirrelMusic.volume = 0;
+squirrelMusic.preload = 'auto';
+
+let activeLevelTrack = -1;
+let levelMusicPaused = false; // true when squirrel music overrides
+
+function fadeAudio(audio, toVol, duration, onDone) {
+  const steps = 15;
+  const stepTime = duration / steps;
+  const startVol = audio.volume;
+  const volStep = (toVol - startVol) / steps;
+  let step = 0;
+  const id = setInterval(() => {
+    step++;
+    audio.volume = Math.max(0, Math.min(1, startVol + volStep * step));
+    if(step >= steps) {
+      clearInterval(id);
+      audio.volume = Math.max(0, Math.min(1, toVol));
+      if(toVol === 0) audio.pause();
+      if(onDone) onDone();
+    }
+  }, stepTime);
+  return id;
+}
+
+function startLevelMusic(level) {
+  levelMusicTracks.forEach((t, i) => {
+    if(i !== level) { t.pause(); t.volume = 0; t.currentTime = 0; }
+  });
+  squirrelMusic.pause();
+  squirrelMusic.volume = 0;
+  activeLevelTrack = level;
+  levelMusicPaused = false;
+  const track = levelMusicTracks[level];
+  if(!track) return;
+  track.currentTime = 0;
+  if(musicMuted) return;
+  track.volume = MUSIC_VOLUME;
+  track.play().catch(() => {});
+}
+
+function stopLevelMusic() {
+  levelMusicTracks.forEach(t => { t.pause(); t.volume = 0; });
+  squirrelMusic.pause();
+  squirrelMusic.volume = 0;
+  activeLevelTrack = -1;
+  levelMusicPaused = false;
+}
+
+function startSquirrelMusicOverride() {
+  if(activeLevelTrack < 0) return;
+  levelMusicPaused = true;
+  if(!musicMuted) {
+    const lvlTrack = levelMusicTracks[activeLevelTrack];
+    if(lvlTrack) fadeAudio(lvlTrack, 0, CROSSFADE_MS);
+    squirrelMusic.currentTime = 0;
+    squirrelMusic.volume = 0;
+    squirrelMusic.play().catch(() => {});
+    fadeAudio(squirrelMusic, MUSIC_VOLUME, CROSSFADE_MS);
+  }
+}
+
+function stopSquirrelMusicOverride() {
+  levelMusicPaused = false;
+  if(!musicMuted) {
+    fadeAudio(squirrelMusic, 0, CROSSFADE_MS);
+    if(activeLevelTrack >= 0) {
+      const lvlTrack = levelMusicTracks[activeLevelTrack];
+      lvlTrack.play().catch(() => {});
+      fadeAudio(lvlTrack, MUSIC_VOLUME, CROSSFADE_MS);
+    }
+  } else {
+    squirrelMusic.pause();
+    squirrelMusic.volume = 0;
+  }
+}
+
+const wooshSound = new Audio('sound/woosh.mp3');
+wooshSound.volume = 0.5;
+const woofSound = new Audio('sound/woof.mp3');
+woofSound.volume = 0.6;
+
+function playSfx(sound) {
+  if(musicMuted) return;
+  sound.currentTime = 0;
+  sound.play().catch(() => {});
+}
+
+function toggleMute() {
+  musicMuted = !musicMuted;
+  bgMusic.muted = musicMuted;
+  // Handle level/squirrel music
+  if(activeLevelTrack >= 0) {
+    const lvlTrack = levelMusicTracks[activeLevelTrack];
+    if(musicMuted) {
+      lvlTrack.pause();
+      squirrelMusic.pause();
+    } else {
+      if(levelMusicPaused) {
+        squirrelMusic.volume = MUSIC_VOLUME;
+        squirrelMusic.play().catch(() => {});
+      } else {
+        lvlTrack.volume = MUSIC_VOLUME;
+        lvlTrack.play().catch(() => {});
+      }
+    }
+  }
+}
 
 // ============================================================
 // CONSTANTS
@@ -78,26 +289,523 @@ dogImages['sheep-dog'] = new Image(); dogImages['sheep-dog'].src = 'img/dogs/sit
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const W = 720, H = 560;
-const GRID_COLS = 6;
+
+// HiDPI canvas scaling — sharper rendering on Retina/high-DPI screens
+const DPR = window.devicePixelRatio || 1;
+canvas.width = W * DPR;
+canvas.height = H * DPR;
+canvas.style.width = W + 'px';
+canvas.style.height = H + 'px';
+ctx.scale(DPR, DPR);
+const GRID_COLS = 10;
 const GRID_ROWS = 10;
-const CELL_W = 60;
-const CELL_H = 60;
-const GRID_LEFT = (W - GRID_COLS * CELL_W) / 2;
-const GRID_TOP = 80;
+const CELL_SIZE = 35;
+const GRID_LEFT = (W - GRID_COLS * CELL_SIZE) / 2;
+const GRID_TOP = 50;
+const GRID_BOTTOM = GRID_TOP + GRID_ROWS * CELL_SIZE; // 50 + 350 = 400
+
+const AIM_AREA_X = W - 80;
+const AIM_AREA_Y = H - 20;
+const BALL_ORIGIN_X = W / 2;
+const BALL_DRAW_Y = H - 15; // ball center near bottom - ~65% visible
+
+const SPRITE_OVERFLOW = 1.0;
+
+const BOUNCE_DURATION = 400;
+
+// Squirrel constants
+const SQUIRREL_Y = 505;
+const SQUIRREL_SIZE = 117;
+const HIT_ZONE_TOP = GRID_BOTTOM; // 400
+const HIT_ZONE_BOTTOM = H; // full bottom area
+const SQUIRREL_HIT_RADIUS = 50;
+const ACORN_SPEED = 800;
+const SQUIRREL_ALERT_DURATION = 1000;
+
+// ============================================================
+// LEVEL DATA (with breed counts)
+// ============================================================
+const LEVELS = [
+  {time: 75, goal: 3, breeds: 3},
+  {time: 70, goal: 4, breeds: 4},
+  {time: 65, goal: 5, breeds: 5},
+  {time: 60, goal: 6, breeds: 6},
+];
+const LEVEL_NAMES = ['Park', 'Forest', 'Desert', 'Base'];
 
 // ============================================================
 // GAME STATE
 // ============================================================
-let grid = []; // 2D array of {breed, orientation} or null
+let grid = [];
 let score = 0;
+let acorns = 0;
 let gameRunning = false;
-let currentDog = null; // {breed, orientation: 'h' or 'v'}
-let dogX = GRID_COLS / 2;
-let dogY = -2;
+let currentDog = null;
 let dropping = false;
-let selectedCell = null; // {row, col} for swap mechanic
-let matchingCells = []; // Cells currently matching
+let matchingCells = [];
 let animatingMatch = false;
+let matchPulseStart = 0;
+
+let currentLevel = 0;
+let timerStart = 0;
+let timeRemaining = 60;
+let timerRunning = false;
+
+let floatingTexts = [];
+
+let bouncing = false;
+let bounceStartTime = 0;
+let bounceCells = [];
+
+let chainLevel = 0;
+
+// Pack stats (per level)
+let packStats = {3: 0, 4: 0, 5: 0};
+
+let treats = 0;
+
+let nudging = false;
+let nudgeStartTime = 0;
+let nudgeCells = [];
+let nudgeDirection = 0;
+const NUDGE_DURATION = 150;
+
+let dragging = false;
+let dragStartRow = -1;
+let dragStartCol = -1;
+let dragStartCells = null;
+let dragMouseX = 0;
+let dragMouseY = 0;
+let dragOriginX = 0;
+let dragOriginY = 0;
+let dragDidMove = false;
+
+let hoverRow = -1;
+let hoverCol = -1;
+
+let ballGrabbed = false;
+let ballGrabStartX = 0;
+let ballGrabStartY = 0;
+let ballDragX = 0;
+let ballDragY = 0;
+const BALL_GRAB_RADIUS = 80;
+
+let aimTargetCol = 4;
+let mouseCanvasX = W / 2;
+let mouseCanvasY = H / 2;
+
+let throwing = false;
+let throwStartTime = 0;
+let throwLandRow = -1;
+let throwLandCol = -1;
+let ballCurrentPos = null;
+let dogCurrentPos = null;
+
+// Available breeds for current level
+let levelBreeds = [];
+
+// Squirrel state
+let squirrelActive = false;
+let squirrelAlertActive = false;
+let squirrelAlertStart = 0;
+let squirrelX = 0;
+let squirrelDir = 1;
+let squirrelSpeed = 80;
+let squirrelFromLeft = true;
+let squirrelRetreating = false;
+let squirrelHitTime = 0;
+let squirrelLastReverseCheck = 0;
+let squirrelReversed = false;
+let squirrelReverseEnd = 0;
+let squirrelFrame = 0;
+let squirrelFrameTime = 0;
+let squirrelNextSpawnTime = 0;
+let squirrelLastUpdateTime = 0;
+let acornProjectiles = [];
+let starbursts = []; // {x, y, startTime, particles: [{angle, speed, size, color}]}
+
+// Screen state
+const SCREEN = { WELCOME: 0, MAP: 1, GAMEPLAY: 2 };
+let gameScreen = SCREEN.WELCOME;
+let activeBgLevel = 0; // which level's background to show (doesn't change until iris mid)
+
+// Map data
+let completedLevels = [false, false, false, false];
+// Photoshop coords on 1536x1024 image → scaled to 720x560 canvas
+const MAP_IMG_W = 1536, MAP_IMG_H = 1024;
+const MAP_SCALE_X = W / MAP_IMG_W; // 0.46875
+const MAP_SCALE_Y = H / MAP_IMG_H; // 0.546875
+const MAP_LEVELS = [
+  {x: Math.round(475 * MAP_SCALE_X) + 15,  y: Math.round(560 * MAP_SCALE_Y) + 10,  name: 'Park'},
+  {x: Math.round(311 * MAP_SCALE_X) + 15,  y: Math.round(339 * MAP_SCALE_Y) + 10,  name: 'Forest'},
+  {x: Math.round(1061 * MAP_SCALE_X) + 15, y: Math.round(706 * MAP_SCALE_Y) + 10,  name: 'Desert'},
+  {x: Math.round(1043 * MAP_SCALE_X) + 15, y: Math.round(316 * MAP_SCALE_Y) + 10,  name: 'Base'}
+];
+console.log('Map image:', MAP_IMG_W + 'x' + MAP_IMG_H, '→ canvas:', W + 'x' + H,
+  '| scaleX:', MAP_SCALE_X.toFixed(4), 'scaleY:', MAP_SCALE_Y.toFixed(4));
+console.log('MAP_LEVELS:', MAP_LEVELS.map(l => l.name + ': (' + l.x + ', ' + l.y + ')').join(', '));
+const MAP_CLICK_RADIUS = 35;
+const MAP_OVAL_RX = 23; // horizontal radius (50% * 1.2 = 60% of original)
+const MAP_OVAL_RY = 14; // vertical radius (50% * 1.2 = 60% of original)
+let mapHoveredLevel = -1;
+let welcomeBtnHovered = false;
+const WELCOME_BTN = { x: W - 70, y: H - 70, r: 40 }; // bottom-right circle
+
+// Iris transition
+let iris = { active: false, phase: 'close', startTime: 0, radius: 0, onMid: null, onDone: null };
+const IRIS_MAX_R = Math.sqrt(W * W + H * H) / 2;
+const IRIS_CLOSE = 500, IRIS_PAUSE = 200, IRIS_OPEN = 500;
+
+// Paw path animation
+let pawPath = { active: false, from: 0, to: 1, startTime: 0, duration: 1800 };
+
+// ============================================================
+// PROGRESS SAVE/LOAD
+// ============================================================
+function saveProgress() {
+  localStorage.setItem('dawgpile_save', JSON.stringify({ completed: completedLevels }));
+}
+function loadProgress() {
+  try {
+    const d = JSON.parse(localStorage.getItem('dawgpile_save'));
+    if(d && d.completed) completedLevels = d.completed;
+  } catch(e) {}
+}
+
+// ============================================================
+// IRIS TRANSITION
+// ============================================================
+function startIris(onMid, onDone) {
+  iris.active = true;
+  iris.phase = 'close';
+  iris.startTime = performance.now();
+  iris.radius = IRIS_MAX_R;
+  iris.onMid = onMid || null;
+  iris.onDone = onDone || null;
+}
+
+function updateIris(now) {
+  if(!iris.active) return;
+  const elapsed = now - iris.startTime;
+
+  if(iris.phase === 'close') {
+    const t = Math.min(elapsed / IRIS_CLOSE, 1.0);
+    const e = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
+    iris.radius = IRIS_MAX_R * (1 - e);
+    if(t >= 1.0) {
+      iris.phase = 'pause';
+      iris.startTime = now;
+      iris.radius = 0;
+      if(iris.onMid) { iris.onMid(); iris.onMid = null; }
+    }
+  } else if(iris.phase === 'pause') {
+    if(elapsed >= IRIS_PAUSE) {
+      iris.phase = 'open';
+      iris.startTime = now;
+    }
+  } else if(iris.phase === 'open') {
+    const t = Math.min(elapsed / IRIS_OPEN, 1.0);
+    const e = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
+    iris.radius = IRIS_MAX_R * e;
+    if(t >= 1.0) {
+      iris.active = false;
+      iris.radius = IRIS_MAX_R;
+      if(iris.onDone) { iris.onDone(); iris.onDone = null; }
+    }
+  }
+}
+
+function drawIris() {
+  if(!iris.active) return;
+  ctx.save();
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.rect(0, 0, W, H);
+  ctx.arc(W / 2, H / 2, Math.max(0, iris.radius), 0, Math.PI * 2, true);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+// ============================================================
+// WELCOME SCREEN
+// ============================================================
+function drawWelcomeScreen() {
+  if(welcomeLoaded && welcomeImg.complete) {
+    ctx.drawImage(welcomeImg, 0, 0, W, H);
+  } else {
+    ctx.fillStyle = '#2a4858';
+    ctx.fillRect(0, 0, W, H);
+  }
+  // Play button (bottom-right circle with triangle)
+  const b = WELCOME_BTN;
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.5)';
+  ctx.shadowBlur = welcomeBtnHovered ? 18 : 10;
+  ctx.fillStyle = welcomeBtnHovered ? '#ff8555' : '#ff6b35';
+  ctx.beginPath();
+  ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+  ctx.fill();
+  // White border
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  // Play triangle (▶)
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  const triSize = b.r * 0.45;
+  ctx.moveTo(b.x - triSize * 0.7, b.y - triSize);
+  ctx.lineTo(b.x - triSize * 0.7, b.y + triSize);
+  ctx.lineTo(b.x + triSize, b.y);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function handleWelcomeClick(x, y) {
+  const b = WELCOME_BTN;
+  const dx = x - b.x, dy = y - b.y;
+  if(Math.sqrt(dx*dx + dy*dy) <= b.r) {
+    startIris(() => {
+      gameScreen = SCREEN.MAP;
+      bgMusic.currentTime = 0;
+      bgMusic.play().catch(() => {});
+    });
+  }
+}
+
+// ============================================================
+// MAP SCREEN
+// ============================================================
+function drawMapScreen(now) {
+  if(mapLoaded && mapImg.complete) {
+    ctx.drawImage(mapImg, 0, 0, W, H);
+  } else {
+    ctx.fillStyle = '#4a8868';
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Paw path animation
+  if(pawPath.active) {
+    const elapsed = now - pawPath.startTime;
+    const progress = Math.min(elapsed / pawPath.duration, 1.0);
+    const from = MAP_LEVELS[pawPath.from];
+    const to = MAP_LEVELS[pawPath.to];
+    const dx = to.x - from.x, dy = to.y - from.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const numPrints = Math.max(4, Math.floor(dist / 35));
+    const visibleCount = Math.floor(numPrints * progress);
+
+    ctx.save();
+    ctx.font = '22px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for(let i = 0; i <= visibleCount && i < numPrints; i++) {
+      const t = i / (numPrints - 1);
+      const px = from.x + dx * t;
+      const py = from.y + dy * t;
+      ctx.globalAlpha = 0.8;
+      ctx.fillText('\u{1F43E}', px, py);
+    }
+    ctx.restore();
+
+    if(progress >= 1.0) {
+      pawPath.active = false;
+    }
+  }
+
+  // Level indicators
+  for(let i = 0; i < MAP_LEVELS.length; i++) {
+    const lv = MAP_LEVELS[i];
+    const isCompleted = completedLevels[i];
+    const isCurrent = (i === currentLevel) && !isCompleted;
+    const isLocked = !isCurrent && !isCompleted;
+
+    ctx.save();
+
+    if(isCompleted) {
+      // Bright golden star (custom drawn)
+      const starR = 22, innerR = 10, pts = 5;
+      ctx.beginPath();
+      for(let s = 0; s < pts * 2; s++) {
+        const r = s % 2 === 0 ? starR : innerR;
+        const angle = (s * Math.PI / pts) - Math.PI / 2;
+        if(s === 0) ctx.moveTo(lv.x + r * Math.cos(angle), lv.y + r * Math.sin(angle));
+        else ctx.lineTo(lv.x + r * Math.cos(angle), lv.y + r * Math.sin(angle));
+      }
+      ctx.closePath();
+      // Bright golden gradient fill
+      const starGrad = ctx.createRadialGradient(lv.x, lv.y - 4, 0, lv.x, lv.y, starR);
+      starGrad.addColorStop(0, '#fff700');
+      starGrad.addColorStop(0.5, '#ffdd00');
+      starGrad.addColorStop(1, '#ffaa00');
+      ctx.fillStyle = starGrad;
+      ctx.shadowColor = '#ffdd00';
+      ctx.shadowBlur = 12;
+      ctx.fill();
+      // White outline
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 3;
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+    } else if(isLocked) {
+      // Dimmed oval + lock
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.ellipse(lv.x, lv.y, MAP_OVAL_RX, MAP_OVAL_RY, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1.0;
+      ctx.font = '28px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('\u{1F512}', lv.x, lv.y);
+    } else if(isCurrent) {
+      // Pulsing gold glow oval
+      const pulse = 1.0 + 0.15 * Math.sin(now / 400 * Math.PI * 2);
+      ctx.shadowColor = '#ffd700';
+      ctx.shadowBlur = 18 * pulse;
+      ctx.fillStyle = 'rgba(255,215,0,0.35)';
+      ctx.beginPath();
+      ctx.ellipse(lv.x, lv.y, MAP_OVAL_RX * pulse, MAP_OVAL_RY * pulse, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Bouncing arrow
+      const bounce = Math.sin(now / 300 * Math.PI * 2) * 8;
+      ctx.fillStyle = '#ff6b35';
+      ctx.font = 'bold 30px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      const arrowY = lv.y - MAP_OVAL_RY - 25 + bounce;
+      ctx.strokeText('\u25BC', lv.x, arrowY);
+      ctx.fillText('\u25BC', lv.x, arrowY);
+    }
+
+    // Level name below
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = isLocked ? 0.5 : 1.0;
+    ctx.font = 'bold 16px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+    ctx.lineWidth = 3;
+    ctx.strokeText(lv.name, lv.x, lv.y + MAP_OVAL_RY + 8);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(lv.name, lv.x, lv.y + MAP_OVAL_RY + 8);
+
+    // Hover ring on current
+    if(mapHoveredLevel === i && isCurrent) {
+      ctx.globalAlpha = 1.0;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(lv.x, lv.y, MAP_OVAL_RX + 6, MAP_OVAL_RY + 4, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  // Bottom-left icon buttons: Mute + Reset (orange circle style matching play button)
+  const btnR = 25;
+  const btnY = H - btnR - 12;
+  const muteCX = btnR + 12;
+  const resetCX = muteCX + btnR * 2 + 14;
+
+  // Mute button
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.5)';
+  ctx.shadowBlur = mapMuteHovered ? 18 : 10;
+  ctx.fillStyle = mapMuteHovered ? '#ff8555' : '#ff6b35';
+  ctx.beginPath(); ctx.arc(muteCX, btnY, btnR, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.font = '18px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(musicMuted ? '\u{1F507}' : '\u{1F50A}', muteCX, btnY);
+  ctx.restore();
+
+  // Reset button
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.5)';
+  ctx.shadowBlur = mapResetHovered ? 18 : 10;
+  ctx.fillStyle = mapResetHovered ? '#ff8555' : '#ff6b35';
+  ctx.beginPath(); ctx.arc(resetCX, btnY, btnR, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.font = '18px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('\u{1F504}', resetCX, btnY);
+  ctx.restore();
+}
+
+let mapResetHovered = false;
+let mapMuteHovered = false;
+const MAP_BTN_R = 25;
+const MAP_BTN_Y = H - MAP_BTN_R - 12;
+const MAP_MUTE_BTN = { cx: MAP_BTN_R + 12, cy: MAP_BTN_Y, r: MAP_BTN_R };
+const MAP_RESET_BTN = { cx: MAP_BTN_R + 12 + MAP_BTN_R * 2 + 14, cy: MAP_BTN_Y, r: MAP_BTN_R };
+
+function handleMapClick(x, y) {
+  // Check mute button (circular)
+  const mb = MAP_MUTE_BTN;
+  if(Math.sqrt((x - mb.cx) * (x - mb.cx) + (y - mb.cy) * (y - mb.cy)) <= mb.r) {
+    toggleMute();
+    return;
+  }
+  // Check reset button (circular)
+  const rb = MAP_RESET_BTN;
+  if(Math.sqrt((x - rb.cx) * (x - rb.cx) + (y - rb.cy) * (y - rb.cy)) <= rb.r) {
+    if(confirm('Reset all progress? You\'ll start from Level 1.')) {
+      completedLevels = [false, false, false, false];
+      currentLevel = 0;
+      score = 0;
+      localStorage.removeItem('dawgpile_save');
+    }
+    return;
+  }
+
+  for(let i = 0; i < MAP_LEVELS.length; i++) {
+    const lv = MAP_LEVELS[i];
+    const dx = (x - lv.x) / (MAP_OVAL_RX + 10);
+    const dy = (y - lv.y) / (MAP_OVAL_RY + 8);
+    if(dx*dx + dy*dy <= 1) { // inside ellipse
+      const isCompleted = completedLevels[i];
+      const isCurrent = (i === currentLevel) && !isCompleted;
+      if(isCurrent) {
+        showLevelStart();
+      }
+      return;
+    }
+  }
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function getAvailableBreeds() {
+  const lvl = LEVELS[Math.min(currentLevel, LEVELS.length - 1)];
+  return dogNames.slice(0, lvl.breeds);
+}
+
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = Math.ceil(seconds % 60);
+  return String(m).padStart(2, '0') + ':' + String(Math.min(s, 59)).padStart(2, '0');
+}
 
 // ============================================================
 // GRID FUNCTIONS
@@ -106,9 +814,7 @@ function initGrid() {
   grid = [];
   for(let r = 0; r < GRID_ROWS; r++) {
     grid[r] = [];
-    for(let c = 0; c < GRID_COLS; c++) {
-      grid[r][c] = null;
-    }
+    for(let c = 0; c < GRID_COLS; c++) grid[r][c] = null;
   }
 }
 
@@ -118,120 +824,175 @@ function getCell(row, col) {
 }
 
 function setCell(row, col, value) {
-  if(row >= 0 && row < GRID_ROWS && col >= 0 && col < GRID_COLS) {
-    grid[row][col] = value;
-  }
+  if(row >= 0 && row < GRID_ROWS && col >= 0 && col < GRID_COLS) grid[row][col] = value;
 }
 
-// Check if dog placement is valid
 function canPlace(row, col, orientation) {
-  if(orientation === 'v') {
-    // 2 cells vertical (2 rows, 1 col)
-    return getCell(row, col) === null && getCell(row + 1, col) === null;
+  if(orientation === 'h') {
+    return row >= 0 && row < GRID_ROWS && col >= 0 && col + 1 < GRID_COLS &&
+           getCell(row, col) === null && getCell(row, col + 1) === null;
+  }
+  return row >= 0 && row + 1 < GRID_ROWS && col >= 0 && col < GRID_COLS &&
+         getCell(row, col) === null && getCell(row + 1, col) === null;
+}
+
+function placeDog(row, col, breed, orientation) {
+  if(orientation === 'h') {
+    setCell(row, col, {breed, orientation, primary: true});
+    setCell(row, col + 1, {breed, orientation, primary: false});
   } else {
-    // 2 cells horizontal (1 row, 2 cols)
-    return getCell(row, col) === null && getCell(row, col + 1) === null;
+    setCell(row, col, {breed, orientation, primary: true});
+    setCell(row + 1, col, {breed, orientation, primary: false});
   }
 }
 
-// Place dog on grid
-function placeDog(row, col, breed, orientation) {
-  const dogData = {breed, orientation};
-  if(orientation === 'v') {
-    setCell(row, col, dogData);
-    setCell(row + 1, col, dogData);
+// Find both cells of the dog at (row, col)
+function findDogCells(row, col) {
+  const cell = getCell(row, col);
+  if(!cell) return null;
+  let cells;
+  if(cell.primary) {
+    if(cell.orientation === 'h') cells = [{row, col}, {row, col: col + 1}];
+    else cells = [{row, col}, {row: row + 1, col}];
   } else {
-    setCell(row, col, dogData);
-    setCell(row, col + 1, dogData);
+    if(cell.orientation === 'h') cells = [{row, col: col - 1}, {row, col}];
+    else cells = [{row: row - 1, col}, {row, col}];
   }
+  // Verify partner exists and matches breed
+  for(const c of cells) {
+    const p = getCell(c.row, c.col);
+    if(!p || p.breed !== cell.breed) return [{row, col}]; // broken pair
+  }
+  return cells;
 }
 
 // ============================================================
 // MATCH-3 LOGIC
 // ============================================================
-function findMatches() {
-  const matches = new Set();
-  
-  // Check horizontal matches
+function findMatchGroups() {
+  const groups = [];
+  // Horizontal matches: 6+ consecutive same-breed cells in a row = 3+ dogs
   for(let r = 0; r < GRID_ROWS; r++) {
-    for(let c = 0; c < GRID_COLS - 2; c++) {
-      const cell1 = getCell(r, c);
-      const cell2 = getCell(r, c + 1);
-      const cell3 = getCell(r, c + 2);
-      
-      if(cell1 && cell2 && cell3 && 
-         cell1.breed === cell2.breed && cell2.breed === cell3.breed) {
-        matches.add(`${r},${c}`);
-        matches.add(`${r},${c+1}`);
-        matches.add(`${r},${c+2}`);
-        
-        // Check for longer matches
-        let c2 = c + 3;
-        while(c2 < GRID_COLS) {
-          const cell = getCell(r, c2);
-          if(cell && cell.breed === cell1.breed) {
-            matches.add(`${r},${c2}`);
-            c2++;
-          } else break;
-        }
+    let runStart = 0, runBreed = null;
+    for(let c = 0; c <= GRID_COLS; c++) {
+      const cell = c < GRID_COLS ? getCell(r, c) : null;
+      const breed = cell ? cell.breed : null;
+      if(breed === runBreed && breed !== null) continue;
+      const runLen = c - runStart;
+      const dogCount = Math.floor(runLen / 2);
+      if(runBreed && dogCount >= 3) {
+        const cells = [];
+        for(let i = runStart; i < c; i++) cells.push({row: r, col: i});
+        groups.push({cells, count: dogCount});
       }
+      runStart = c; runBreed = breed;
     }
   }
-  
-  // Check vertical matches
-  for(let c = 0; c < GRID_COLS; c++) {
-    for(let r = 0; r < GRID_ROWS - 2; r++) {
-      const cell1 = getCell(r, c);
-      const cell2 = getCell(r + 1, c);
-      const cell3 = getCell(r + 2, c);
-      
-      if(cell1 && cell2 && cell3 && 
-         cell1.breed === cell2.breed && cell2.breed === cell3.breed) {
-        matches.add(`${r},${c}`);
-        matches.add(`${r+1},${c}`);
-        matches.add(`${r+2},${c}`);
-        
-        // Check for longer matches
-        let r2 = r + 3;
-        while(r2 < GRID_ROWS) {
-          const cell = getCell(r2, c);
-          if(cell && cell.breed === cell1.breed) {
-            matches.add(`${r2},${c}`);
-            r2++;
-          } else break;
+  // Vertical matches: 3+ consecutive rows with same breed in exact same 2 columns
+  for(let c = 0; c < GRID_COLS - 1; c++) {
+    let runStart = 0, runBreed = null;
+    for(let r = 0; r <= GRID_ROWS; r++) {
+      const cellL = r < GRID_ROWS ? getCell(r, c) : null;
+      const cellR = r < GRID_ROWS ? getCell(r, c + 1) : null;
+      const breed = (cellL && cellR && cellL.breed === cellR.breed) ? cellL.breed : null;
+      if(breed === runBreed && breed !== null) continue;
+      if(runBreed && r - runStart >= 3) {
+        const cells = [];
+        for(let i = runStart; i < r; i++) {
+          cells.push({row: i, col: c});
+          cells.push({row: i, col: c + 1});
         }
+        groups.push({cells, count: r - runStart});
       }
+      runStart = r; runBreed = breed;
     }
   }
-  
-  return Array.from(matches).map(s => {
-    const [r, c] = s.split(',').map(Number);
-    return {row: r, col: c};
-  });
+  return groups;
+}
+
+function findMatches() {
+  const groups = findMatchGroups();
+  const seen = new Set();
+  const result = [];
+  for(const g of groups) {
+    for(const c of g.cells) {
+      const key = `${c.row},${c.col}`;
+      if(!seen.has(key)) { seen.add(key); result.push(c); }
+    }
+  }
+  return result;
+}
+
+function scoreForMatch(count) {
+  if(count >= 5) return {points: 500, acorns: 2, treats: 2};
+  if(count >= 4) return {points: 250, acorns: 1, treats: 1};
+  return {points: 100, acorns: 1, treats: 0};
+}
+
+function spawnFloat(text, x, y, color, size, bgColor) {
+  floatingTexts.push({text, x, y, startTime: performance.now(), duration: 1500, color: color || '#ffd700', size: size || 24, bgColor: bgColor || null});
 }
 
 function removeMatches(matches) {
-  matches.forEach(({row, col}) => {
-    setCell(row, col, null);
-  });
-  score += matches.length * 10;
+  const groups = findMatchGroups();
+  let totalPoints = 0;
+  let totalAcorns = 0;
+  let totalTreats = 0;
+  for(const g of groups) {
+    const reward = scoreForMatch(g.count);
+    let pts = reward.points;
+    if(chainLevel > 0) pts = Math.floor(pts * Math.pow(1.5, chainLevel));
+    totalPoints += pts;
+    totalAcorns += reward.acorns;
+    totalTreats += reward.treats;
+    // Track pack stats
+    const packKey = Math.min(g.count, 5);
+    if(packStats[packKey] !== undefined) packStats[packKey]++;
+    else if(g.count >= 5) packStats[5]++;
+    const avgRow = g.cells.reduce((s, c) => s + c.row, 0) / g.cells.length;
+    const avgCol = g.cells.reduce((s, c) => s + c.col, 0) / g.cells.length;
+    const fx = GRID_LEFT + (avgCol + 0.5) * CELL_SIZE;
+    const fy = GRID_TOP + avgRow * CELL_SIZE;
+    const chainTxt = chainLevel > 0 ? ' x' + (chainLevel + 1) : '';
+    let label = g.count + ' Pack! +' + pts + chainTxt;
+    spawnFloat(label, fx, fy, '#fff', 26, 'rgba(255,200,0,0.85)');
+    if(reward.acorns > 0) spawnFloat('\u{1F330} +' + reward.acorns, fx, fy + 32, '#fff', 22, 'rgba(180,120,30,0.85)');
+    if(reward.treats > 0) spawnFloat('\u{1F9B4} +' + reward.treats, fx, fy + 58, '#fff', 22, 'rgba(220,120,40,0.85)');
+  }
+  score += totalPoints;
+  acorns += totalAcorns;
+  treats += totalTreats;
+  matches.forEach(({row, col}) => setCell(row, col, null));
   updateUI();
 }
 
 function applyGravity() {
   let moved = false;
-  for(let c = 0; c < GRID_COLS; c++) {
-    for(let r = GRID_ROWS - 1; r >= 0; r--) {
-      if(getCell(r, c) === null) {
-        // Find dog above
-        for(let r2 = r - 1; r2 >= 0; r2--) {
-          if(getCell(r2, c) !== null) {
-            setCell(r, c, getCell(r2, c));
-            setCell(r2, c, null);
-            moved = true;
-            break;
-          }
+  // Process dog pairs as units (bottom-up so lower dogs settle first)
+  for(let r = GRID_ROWS - 2; r >= 0; r--) {
+    for(let c = 0; c < GRID_COLS; c++) {
+      const cell = getCell(r, c);
+      if(!cell || !cell.primary) continue;
+      // Horizontal dog: primary at (r,c), secondary at (r,c+1)
+      const pc = c + 1;
+      if(pc >= GRID_COLS) continue;
+      // Find furthest row both columns are empty simultaneously
+      let targetR = r;
+      for(let testR = r + 1; testR < GRID_ROWS; testR++) {
+        if(getCell(testR, c) === null && getCell(testR, pc) === null) {
+          targetR = testR;
+        } else {
+          break;
         }
+      }
+      if(targetR > r) {
+        const cellL = getCell(r, c);
+        const cellR = getCell(r, pc);
+        setCell(r, c, null);
+        setCell(r, pc, null);
+        setCell(targetR, c, cellL);
+        setCell(targetR, pc, cellR);
+        moved = true;
       }
     }
   }
@@ -243,294 +1004,1688 @@ async function processMatches() {
   if(matches.length > 0) {
     matchingCells = matches;
     animatingMatch = true;
-    
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
+    matchPulseStart = performance.now();
+    await new Promise(resolve => setTimeout(resolve, 700));
     removeMatches(matches);
     matchingCells = [];
     animatingMatch = false;
-    
     await new Promise(resolve => setTimeout(resolve, 200));
-    
-    while(applyGravity()) {
-      await new Promise(resolve => setTimeout(resolve, 300));
-    }
-    
-    // Check for cascades
+    while(applyGravity()) await new Promise(resolve => setTimeout(resolve, 200));
+    chainLevel++;
     await processMatches();
   }
 }
 
 // ============================================================
-// SWAP MECHANIC
+// ADJACENT BREED BONUS
 // ============================================================
-function swapCells(row1, col1, row2, col2) {
-  const temp = getCell(row1, col1);
-  setCell(row1, col1, getCell(row2, col2));
-  setCell(row2, col2, temp);
+function checkAdjacentBonus(landRow, landCol, breed, orientation, skipSet) {
+  const dogCells = [{row: landRow, col: landCol}];
+  if(orientation === 'h') dogCells.push({row: landRow, col: landCol + 1});
+  else dogCells.push({row: landRow + 1, col: landCol});
+
+  const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+  let bonus = 0;
+  const checked = new Set();
+  for(const dc of dogCells) {
+    for(const [dr, dcc] of dirs) {
+      const nr = dc.row + dr, nc = dc.col + dcc;
+      if(dogCells.some(oc => oc.row === nr && oc.col === nc)) continue;
+      const key = `${nr},${nc}`;
+      if(checked.has(key)) continue;
+      checked.add(key);
+      if(skipSet && skipSet.has(key)) continue;
+      const cell = getCell(nr, nc);
+      if(cell && cell.breed === breed) {
+        bonus += 5;
+        const fx = GRID_LEFT + ((dc.col + nc) / 2 + 0.5) * CELL_SIZE;
+        const fy = GRID_TOP + ((dc.row + nr) / 2 + 0.5) * CELL_SIZE;
+        spawnFloat('Buddies! +5', fx, fy, '#fff', 20, 'rgba(60,180,120,0.85)');
+      }
+    }
+  }
+  if(bonus > 0) { score += bonus; updateUI(); }
 }
 
-function areAdjacent(r1, c1, r2, c2) {
-  return (Math.abs(r1 - r2) === 1 && c1 === c2) ||
-         (Math.abs(c1 - c2) === 1 && r1 === r2);
+// ============================================================
+// AIMING & THROW
+// ============================================================
+function findLandingRow(col, orientation) {
+  for(let r = GRID_ROWS - (orientation === 'v' ? 2 : 1); r >= 0; r--) {
+    if(canPlace(r, col, orientation)) return r;
+  }
+  return -1;
+}
+
+function calcArc(sx, sy, ex, ey, peakY, numPoints) {
+  const mx = (sx + ex) / 2;
+  const points = [];
+  for(let i = 0; i <= numPoints; i++) {
+    const t = i / numPoints;
+    points.push({
+      x: (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * mx + t * t * ex,
+      y: (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * peakY + t * t * ey
+    });
+  }
+  return points;
+}
+
+// Given desired visual apex, compute bezier control Y so curve actually reaches it
+function controlYForApex(sy, ey, desiredApexY) {
+  // For quadratic bezier, the visual peak is NOT the control point.
+  // Solve for controlY so the curve's min Y equals desiredApexY.
+  // t_peak = (sy - cY) / (sy - 2*cY + ey), B(t_peak) = desiredApexY
+  // Iterative approach: controlY must be well below desiredApexY
+  // Closed form: cY = desiredApexY - (sy - desiredApexY)*(ey - desiredApexY) / (sqrt(sy - desiredApexY) + sqrt(ey - desiredApexY))^2 ... complex
+  // Simple approximation: cY ≈ 2*desiredApexY - (sy + ey)/2
+  return 2 * desiredApexY - (sy + ey) / 2;
+}
+
+function calculateBallArc(targetCol, landRow, numPoints, aimPeakY) {
+  numPoints = numPoints || 40;
+  const ex = GRID_LEFT + targetCol * CELL_SIZE + CELL_SIZE;
+  const ey = GRID_TOP + landRow * CELL_SIZE + CELL_SIZE / 2;
+  // aimPeakY is the desired visual apex Y (from mouse position in grid)
+  const desiredPeakY = aimPeakY !== undefined ? aimPeakY : GRID_TOP + 60;
+  // Ensure peak is at least a bit above the landing point
+  const clampedPeak = Math.min(desiredPeakY, ey - 20);
+  const peakY = controlYForApex(BALL_DRAW_Y, ey, clampedPeak);
+  return calcArc(BALL_ORIGIN_X, BALL_DRAW_Y, ex, ey, peakY, numPoints);
+}
+
+function calculateDogArc(targetCol, landRow, numPoints, aimPeakY) {
+  numPoints = numPoints || 40;
+  const sx = AIM_AREA_X, sy = AIM_AREA_Y - 80;
+  const ex = GRID_LEFT + targetCol * CELL_SIZE + CELL_SIZE;
+  const ey = GRID_TOP + landRow * CELL_SIZE + CELL_SIZE / 2;
+  const desiredPeakY = aimPeakY !== undefined ? aimPeakY : GRID_TOP + 60;
+  const clampedPeak = Math.min(desiredPeakY, ey - 20);
+  const peakY = controlYForApex(sy, ey, clampedPeak);
+  return calcArc(sx, sy, ex, ey, peakY, numPoints);
+}
+
+// For aim arc preview (uses ball origin)
+function calculateArcPoints(targetCol, landRow, numPoints) {
+  return calculateBallArc(targetCol, landRow, numPoints || 30);
+}
+
+// ============================================================
+// SQUIRREL SYSTEM
+// ============================================================
+function getSquirrelSpawnInterval() {
+  if(currentLevel === 0) return 20000 + Math.random() * 10000; // 20-30s
+  if(currentLevel === 1) return 15000 + Math.random() * 10000; // 15-25s
+  return 10000 + Math.random() * 10000; // 10-20s
+}
+
+function getSquirrelSpeed() {
+  if(currentLevel === 0) return 80;  // ~9s to cross
+  if(currentLevel === 1) return 120; // ~6s to cross
+  return 160; // ~4.5s to cross
+}
+
+function scheduleSquirrel() {
+  squirrelNextSpawnTime = performance.now() + getSquirrelSpawnInterval();
+}
+
+function resetSquirrelState() {
+  squirrelActive = false;
+  squirrelAlertActive = false;
+  squirrelRetreating = false;
+  squirrelReversed = false;
+  squirrelHitAnim = false;
+  acornProjectiles = [];
+  starbursts = [];
+}
+
+function startSquirrelAlert() {
+  console.log('SQUIRREL ALERT! Acorns:', acorns);
+  squirrelAlertActive = true;
+  squirrelAlertStart = performance.now();
+}
+
+function spawnSquirrel() {
+  console.log('Squirrel spawned! fromLeft:', squirrelFromLeft, 'speed:', getSquirrelSpeed());
+  squirrelAlertActive = false;
+  squirrelActive = true;
+  startSquirrelMusicOverride();
+  squirrelFromLeft = Math.random() < 0.5;
+  squirrelX = squirrelFromLeft ? -SQUIRREL_SIZE : W + SQUIRREL_SIZE;
+  squirrelDir = squirrelFromLeft ? 1 : -1;
+  squirrelSpeed = getSquirrelSpeed();
+  squirrelRetreating = false;
+  squirrelReversed = false;
+  squirrelLastReverseCheck = performance.now();
+  squirrelFrame = 0;
+  squirrelFrameTime = performance.now();
+  squirrelLastUpdateTime = performance.now();
+}
+
+let squirrelHitAnim = false; // true during hit scale-up/fade sequence
+let squirrelHitAnimStart = 0;
+const SQUIRREL_HIT_ANIM_DURATION = 800; // total hit animation duration
+
+function hitSquirrel() {
+  squirrelRetreating = true; // stop normal movement
+  squirrelHitAnim = true;
+  squirrelHitAnimStart = performance.now();
+  squirrelHitTime = performance.now();
+  stopSquirrelMusicOverride();
+  // Reward: +1 acorn for hitting (nets even since throw cost 1)
+  acorns++;
+  updateUI();
+  spawnFloat("Got 'em!", W / 2, H / 2 - 40, '#ffee00', 36, 'rgba(255,140,0,0.9)');
+  spawnFloat('+1 \u{1F330}', W / 2, H / 2, '#fff', 22, 'rgba(180,120,30,0.85)');
+}
+
+let collapseActive = false;
+let collapseStartTime = 0;
+let collapseDogs = []; // {row, col, breed, orientation, delay, rotation}
+const COLLAPSE_DURATION = 1000;
+
+function collapsePile() {
+  squirrelActive = false;
+  stopSquirrelMusicOverride();
+  console.log('COLLAPSE PILE triggered! Grid has dogs:', grid.some(row => row && row.some(c => c)));
+  spawnFloat('OH NO!', W / 2, H / 2 - 60, '#ff4444', 42, 'rgba(200,40,40,0.85)');
+  spawnFloat('Pile collapsed!', W / 2, H / 2, '#fff', 24, 'rgba(100,40,40,0.85)');
+
+  // Gather all dogs for collapse animation (top rows fall first)
+  collapseDogs = [];
+  for(let r = 0; r < GRID_ROWS; r++) {
+    for(let c = 0; c < GRID_COLS; c++) {
+      const cell = grid[r] && grid[r][c];
+      if(cell && cell.isHead) {
+        collapseDogs.push({
+          row: r, col: c,
+          breed: cell.breed, orientation: cell.orientation,
+          delay: r * 80, // top rows start first (stagger by 80ms per row)
+          rotDir: (Math.random() - 0.5) * 2
+        });
+      }
+    }
+  }
+  console.log('Collapse dogs captured:', collapseDogs.length, 'heads');
+  initGrid(); // clear grid (animation uses collapseDogs snapshot)
+  collapseActive = true;
+  collapseStartTime = performance.now();
+
+  // Reset throw/drop state but keep score, acorns, treats, timer
+  throwing = false;
+  dropping = false;
+  bouncing = false;
+  matchingCells = [];
+  animatingMatch = false;
+  ballCurrentPos = null;
+  dogCurrentPos = null;
+
+  // After animation ends, spawn new dog and schedule squirrel
+  setTimeout(() => {
+    console.log('Collapse animation done');
+    collapseActive = false;
+    collapseDogs = [];
+    currentDog = spawnDog();
+    scheduleSquirrel();
+  }, COLLAPSE_DURATION + 300);
+}
+
+function updateSquirrel(now) {
+  if(!gameRunning || !timerRunning) return;
+
+  // Check spawn timing
+  if(!squirrelActive && !squirrelAlertActive && now >= squirrelNextSpawnTime) {
+    // Must be at least 30s into the level AND player needs 2+ acorns
+    const levelElapsed = (now - timerStart) / 1000;
+    if(levelElapsed < 30 || acorns < 2) {
+      squirrelNextSpawnTime = now + 3000; // re-check in 3s
+      return;
+    }
+    startSquirrelAlert();
+  }
+
+  // Alert phase
+  if(squirrelAlertActive) {
+    if(now - squirrelAlertStart >= SQUIRREL_ALERT_DURATION) {
+      spawnSquirrel();
+    }
+    return;
+  }
+
+  if(!squirrelActive) return;
+
+  const dt = (now - squirrelLastUpdateTime) / 1000;
+  squirrelLastUpdateTime = now;
+
+  // Hit animation: squirrel stops, scales up, fades out
+  if(squirrelRetreating) {
+    if(squirrelHitAnim) {
+      const sinceHit = now - squirrelHitAnimStart;
+      if(sinceHit >= SQUIRREL_HIT_ANIM_DURATION) {
+        squirrelActive = false;
+        squirrelHitAnim = false;
+        scheduleSquirrel();
+      }
+      // Squirrel stays frozen in place during animation
+      return;
+    }
+    // Legacy fallback (shouldn't reach here)
+    squirrelActive = false;
+    scheduleSquirrel();
+    return;
+  } else {
+    // Erratic movement: check every 0.5s for random reversal
+    if(now - squirrelLastReverseCheck > 500) {
+      squirrelLastReverseCheck = now;
+      if(!squirrelReversed && Math.random() < 0.25) {
+        squirrelReversed = true;
+        squirrelReverseEnd = now + 250 + Math.random() * 100; // reverse for 250-350ms
+      }
+    }
+    if(squirrelReversed && now >= squirrelReverseEnd) {
+      squirrelReversed = false;
+    }
+
+    const moveDir = squirrelReversed ? -squirrelDir : squirrelDir;
+    squirrelX += moveDir * squirrelSpeed * dt;
+
+    // Check if squirrel escaped (reached opposite side)
+    if(squirrelFromLeft && squirrelX > W + SQUIRREL_SIZE) {
+      collapsePile();
+      return;
+    }
+    if(!squirrelFromLeft && squirrelX < -SQUIRREL_SIZE) {
+      collapsePile();
+      return;
+    }
+  }
+
+  // Animation frame toggle
+  if(now - squirrelFrameTime > 150) {
+    squirrelFrame = 1 - squirrelFrame;
+    squirrelFrameTime = now;
+  }
+}
+
+function spawnStarburst(x, y) {
+  const particles = [];
+  const count = 12;
+  const colors = ['#ffdd00', '#ffaa00', '#ff8800', '#ffee44', '#fff176'];
+  for(let i = 0; i < count; i++) {
+    const angle = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
+    particles.push({
+      angle,
+      speed: 80 + Math.random() * 120,
+      size: 4 + Math.random() * 5,
+      color: colors[Math.floor(Math.random() * colors.length)]
+    });
+  }
+  starbursts.push({x, y, startTime: performance.now(), particles});
+}
+
+function updateAcornProjectiles(now) {
+  acornProjectiles = acornProjectiles.filter(p => {
+    const elapsed = (now - p.startTime) / 1000;
+    const dx = p.targetX - p.startX;
+    const dy = p.targetY - p.startY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const totalTime = dist / ACORN_SPEED;
+    const rawT = Math.min(elapsed / totalTime, 1.0);
+    // Smooth ease-out
+    const t = 1 - Math.pow(1 - rawT, 3);
+    // Linear interpolation with arc offset
+    p.x = p.startX + dx * t;
+    const arcHeight = dist * 0.15; // arc peaks at 15% of distance
+    const arcOffset = -Math.sin(t * Math.PI) * arcHeight; // parabolic arc
+    p.y = p.startY + dy * t + arcOffset;
+    // Scale: starts larger (1.5x), shrinks to 0.6x at target
+    p.scale = 1.5 - t * 0.9;
+    if(rawT >= 1.0) {
+      // Arrived at target - check hit
+      if(squirrelActive && !squirrelRetreating) {
+        const hitDist = Math.abs(p.targetX - squirrelX);
+        if(hitDist < SQUIRREL_HIT_RADIUS) {
+          spawnStarburst(p.targetX, p.targetY);
+          hitSquirrel();
+          return false;
+        }
+      }
+      spawnFloat('Miss!', p.targetX, p.targetY - 10, '#ff8888', 18);
+      return false;
+    }
+    return true;
+  });
 }
 
 // ============================================================
 // GAME FLOW
 // ============================================================
 function startGame() {
-  initGrid();
+  currentLevel = 0;
   score = 0;
+  completedLevels = [false, false, false, false];
   updateUI();
-  currentDog = spawnDog();
-  dogX = Math.floor(GRID_COLS / 2);
-  dogY = -2;
-  dropping = false;
-  selectedCell = null;
-  gameRunning = true;
-  document.getElementById('title-screen').style.display = 'none';
   document.getElementById('gameover-screen').style.display = 'none';
+  startIris(() => {
+    gameScreen = SCREEN.MAP;
+  });
+}
+
+function showLevelStart() {
+  const lvl = LEVELS[currentLevel];
+  levelBreeds = getAvailableBreeds();
+  const name = LEVEL_NAMES[currentLevel] || '';
+  document.getElementById('level-title').textContent = 'Level ' + (currentLevel + 1) + ': ' + name;
+  document.getElementById('level-goal-text').innerHTML =
+    'Collect ' + lvl.goal + ' \u{1F330} in ' + lvl.time + ' seconds!<br>' +
+    lvl.breeds + ' breeds available';
+  document.getElementById('level-start-screen').style.display = 'flex';
+  gameRunning = false;
+  timerRunning = false;
+}
+
+function beginLevel() {
+  document.getElementById('level-start-screen').style.display = 'none';
+  bgMusic.pause();
+  startIris(() => {
+    gameScreen = SCREEN.GAMEPLAY;
+    actuallyBeginLevel();
+  }, () => {
+    startLevelMusic(currentLevel);
+  });
+}
+
+function actuallyBeginLevel() {
+  activeBgLevel = currentLevel; // lock background to this level
+  const lvl = LEVELS[currentLevel];
+  levelBreeds = getAvailableBreeds();
+  initGrid();
+  acorns = 2;
+  treats = 2;
+  chainLevel = 0;
+  packStats = {3: 0, 4: 0, 5: 0};
+  floatingTexts = [];
+  bouncing = false;
+  nudging = false;
+  dragging = false;
+  dragStartCells = null;
+  ballGrabbed = false;
+  currentDog = spawnDog();
+  aimTargetCol = 4;
+  throwing = false;
+  dropping = false;
+  matchingCells = [];
+  animatingMatch = false;
+  ballCurrentPos = null;
+  dogCurrentPos = null;
+  resetSquirrelState();
+  timeRemaining = lvl.time;
+  timerStart = performance.now();
+  timerRunning = true;
+  gameRunning = true;
+  scheduleSquirrel();
+  updateUI();
+}
+
+function levelComplete() {
+  gameRunning = false;
+  timerRunning = false;
+  stopLevelMusic();
+  completedLevels[currentLevel] = true;
+  saveProgress();
+  const lvl = LEVELS[currentLevel];
+  document.getElementById('complete-stats').innerHTML =
+    '\u{1F3C6} Score: ' + score + '<br>\u{1F330} Acorns: ' + acorns + '/' + lvl.goal;
+  document.getElementById('level-complete-screen').style.display = 'flex';
+  document.getElementById('nextLevelBtn').textContent =
+    currentLevel >= LEVELS.length - 1 ? 'YOU WIN!' : 'CONTINUE';
+}
+
+function nextLevel() {
+  document.getElementById('level-complete-screen').style.display = 'none';
+  if(currentLevel < LEVELS.length - 1) {
+    const fromLvl = currentLevel;
+    currentLevel++;
+    startIris(() => {
+      gameScreen = SCREEN.MAP;
+      pawPath.active = true;
+      pawPath.from = fromLvl;
+      pawPath.to = currentLevel;
+      pawPath.startTime = performance.now();
+      bgMusic.currentTime = 0;
+      bgMusic.play().catch(() => {});
+    });
+  } else {
+    startIris(() => {
+      gameScreen = SCREEN.WELCOME;
+      bgMusic.pause();
+    });
+  }
+}
+
+function timeUp() {
+  gameRunning = false;
+  timerRunning = false;
+  stopLevelMusic();
+  const lvl = LEVELS[currentLevel];
+  document.getElementById('timeup-stats').innerHTML =
+    '\u{1F330} ' + acorns + ' / ' + lvl.goal + ' acorns collected';
+  document.getElementById('time-up-screen').style.display = 'flex';
+}
+
+function retryLevel() {
+  document.getElementById('time-up-screen').style.display = 'none';
+  showLevelStart();
 }
 
 function spawnDog() {
-  const breed = dogNames[Math.floor(Math.random() * dogNames.length)];
-  return {breed, orientation: 'v'};
+  const breed = levelBreeds[Math.floor(Math.random() * levelBreeds.length)];
+  return {breed, orientation: 'h'};
 }
 
-function rotateDog() {
-  if(currentDog && !dropping) {
-    currentDog.orientation = currentDog.orientation === 'v' ? 'h' : 'v';
-  }
+let throwBallArc = [];
+let throwDogArc = [];
+let aimPeakY = GRID_TOP + 60; // Y position where arc should peak (from mouse Y)
+
+// Dynamic animation timing (set per throw)
+let throwBallDuration = 420;
+let throwDogDelay = 180;
+let throwDogDuration = 350;
+let throwBounceHeight = 18; // pixels of landing bounce
+let woofPlayed = false;
+
+function throwDog() {
+  if(throwing || dropping || !currentDog) return;
+  const landRow = findLandingRow(aimTargetCol, currentDog.orientation);
+  if(landRow < 0) return;
+  throwLandCol = aimTargetCol;
+  throwLandRow = landRow;
+  throwBallArc = calculateBallArc(aimTargetCol, landRow, 60, aimPeakY);
+  throwDogArc = calculateDogArc(aimTargetCol, landRow, 60, aimPeakY);
+
+  // Calculate arc height ratio (0 = low/short, 1 = high/long)
+  const landY = GRID_TOP + landRow * CELL_SIZE + CELL_SIZE / 2;
+  const arcSpan = BALL_DRAW_Y - aimPeakY; // how high the arc goes
+  const maxSpan = BALL_DRAW_Y - GRID_TOP + 30; // maximum possible height
+  const heightRatio = Math.max(0, Math.min(1, arcSpan / maxSpan));
+  const dx = Math.abs(BALL_ORIGIN_X - (GRID_LEFT + aimTargetCol * CELL_SIZE + CELL_SIZE));
+  const distRatio = dx / (W * 0.5);
+  const intensity = Math.max(heightRatio, distRatio);
+
+  // Variable durations: longer for higher/farther throws
+  throwBallDuration = 350 + intensity * 250;   // 350-600ms
+  throwDogDelay = 120 + intensity * 100;        // 120-220ms
+  throwDogDuration = 300 + intensity * 200;     // 300-500ms
+  throwBounceHeight = 6 + intensity * 20;       // 6-26px bounce
+
+  throwStartTime = performance.now();
+  throwing = true;
+  woofPlayed = false;
+  ballCurrentPos = {x: BALL_ORIGIN_X, y: BALL_DRAW_Y};
+  dogCurrentPos = {x: AIM_AREA_X, y: AIM_AREA_Y - 80};
+  playSfx(wooshSound);
 }
 
-function dropDog() {
-  if(dropping || !currentDog) return;
-  
-  const col = Math.floor(dogX);
-  
-  // Find where it lands
-  let landRow = GRID_ROWS;
-  for(let r = 0; r < GRID_ROWS; r++) {
-    if(!canPlace(r, col, currentDog.orientation)) {
-      landRow = r - 1;
-      break;
-    }
-  }
-  
-  // Check if valid placement
-  if(landRow < 0 || !canPlace(landRow, col, currentDog.orientation)) {
-    gameOver();
-    return;
-  }
-  
-  placeDog(landRow, col, currentDog.breed, currentDog.orientation);
+function smoothEase(t) {
+  // Smooth ease-out: cubic with gentle deceleration (less abrupt than power-6)
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function updateThrowAnimation(timestamp) {
+  if(!throwing) return;
+  const elapsed = timestamp - throwStartTime;
+  const ballT = Math.min(elapsed / throwBallDuration, 1.0);
+  const ballEased = smoothEase(ballT);
+  const ballIdx = Math.floor(ballEased * (throwBallArc.length - 1));
+  ballCurrentPos = throwBallArc[Math.min(ballIdx, throwBallArc.length - 1)];
+  const dogElapsed = Math.max(0, elapsed - throwDogDelay);
+  if(elapsed >= throwDogDelay && !woofPlayed) { woofPlayed = true; playSfx(woofSound); }
+  const dogT = Math.min(dogElapsed / throwDogDuration, 1.0);
+  const dogEased = smoothEase(dogT);
+  const dogIdx = Math.floor(dogEased * (throwDogArc.length - 1));
+  dogCurrentPos = throwDogArc[Math.min(dogIdx, throwDogArc.length - 1)];
+  if(dogT >= 1.0) landDog();
+}
+
+function landDog() {
+  throwing = false;
   dropping = true;
-  
+  const landBreed = currentDog.breed;
+  const landOri = currentDog.orientation;
+  placeDog(throwLandRow, throwLandCol, landBreed, landOri);
+  bouncing = true;
+  bounceStartTime = performance.now();
+  bounceCells = [{row: throwLandRow, col: throwLandCol}];
+  bounceCells.push({row: throwLandRow, col: throwLandCol + 1});
+
   setTimeout(async () => {
+    bouncing = false;
+    chainLevel = 0;
+    // Check matches FIRST before adjacent bonus
+    const preMatches = findMatches();
+    const matchSet = new Set(preMatches.map(m => `${m.row},${m.col}`));
+    const placedCells = [
+      {row: throwLandRow, col: throwLandCol},
+      {row: throwLandRow, col: throwLandCol + 1}
+    ];
+    const placedMatched = placedCells.some(c => matchSet.has(`${c.row},${c.col}`));
+    if(!placedMatched) {
+      checkAdjacentBonus(throwLandRow, throwLandCol, landBreed, landOri, matchSet);
+    }
     await processMatches();
     currentDog = spawnDog();
-    dogX = Math.floor(GRID_COLS / 2);
-    dogY = -2;
     dropping = false;
-    
-    // Check if any moves possible
-    if(!canPlace(0, 0, 'v') && !canPlace(0, 0, 'h')) {
-      let canPlaceAnywhere = false;
-      for(let r = 0; r < GRID_ROWS; r++) {
-        for(let c = 0; c < GRID_COLS; c++) {
-          if(canPlace(r, c, 'v') || canPlace(r, c, 'h')) {
-            canPlaceAnywhere = true;
-            break;
-          }
-        }
-        if(canPlaceAnywhere) break;
-      }
-      if(!canPlaceAnywhere) gameOver();
-    }
-  }, 400);
+    let canPlaceAnywhere = false;
+    for(let r = 0; r < GRID_ROWS && !canPlaceAnywhere; r++)
+      for(let c = 0; c < GRID_COLS && !canPlaceAnywhere; c++)
+        if(canPlace(r, c, 'h')) canPlaceAnywhere = true;
+    if(!canPlaceAnywhere) gameOver();
+  }, BOUNCE_DURATION + 50);
 }
 
 function gameOver() {
   gameRunning = false;
-  document.getElementById('final-score').textContent = score;
+  timerRunning = false;
+  stopLevelMusic();
+  document.getElementById('final-score').innerHTML = '\u{1F3C6} ' + score + ' | \u{1F330} ' + acorns;
   document.getElementById('gameover-screen').style.display = 'flex';
+}
+
+function restartFromGameOver() {
+  document.getElementById('gameover-screen').style.display = 'none';
+  startIris(() => {
+    gameScreen = SCREEN.MAP;
+    bgMusic.currentTime = 0;
+    bgMusic.play().catch(() => {});
+  });
 }
 
 function updateUI() {
   document.getElementById('score').textContent = score;
+  const lvl = LEVELS[currentLevel];
+  document.getElementById('acorns').textContent = acorns + '/' + (lvl ? lvl.goal : '?');
 }
 
 // ============================================================
 // INPUT
 // ============================================================
-canvas.addEventListener('click', (e) => {
-  if(!gameRunning) return;
-  
+function getCanvasPos(e) {
   const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-  
-  // Check if clicking on current dog (rotate)
-  if(!dropping && currentDog) {
-    const dogScreenX = GRID_LEFT + dogX * CELL_W;
-    const dogScreenY = GRID_TOP + dogY * CELL_H;
-    const dogW = currentDog.orientation === 'h' ? CELL_W * 2 : CELL_W;
-    const dogH = currentDog.orientation === 'v' ? CELL_H * 2 : CELL_H;
-    
-    if(x >= dogScreenX && x < dogScreenX + dogW &&
-       y >= dogScreenY && y < dogScreenY + dogH) {
-      rotateDog();
+  return {
+    x: (e.clientX - rect.left) * (W / rect.width),
+    y: (e.clientY - rect.top) * (H / rect.height)
+  };
+}
+
+function performNudge(row, col, forceDir) {
+  if(treats < 1) {
+    const fx = GRID_LEFT + (col + 0.5) * CELL_SIZE;
+    const fy = GRID_TOP + (row + 0.5) * CELL_SIZE;
+    spawnFloat('Need \u{1F9B4}!', fx, fy, '#ff4444', 22);
+    return;
+  }
+  const dogCells = findDogCells(row, col);
+  if(!dogCells || dogCells.length < 2) return;
+  const leftCol = Math.min(dogCells[0].col, dogCells[1].col);
+  const dogRow = dogCells[0].row;
+  // forceDir overrides tap-based direction (used by drag-to-nudge)
+  const dir = forceDir || ((col === leftCol) ? -1 : 1);
+  const destCol = (dir === -1) ? leftCol - 1 : leftCol + 2;
+  if(destCol < 0 || destCol >= GRID_COLS) return;
+  if(getCell(dogRow, destCol) !== null) {
+    const fx = GRID_LEFT + (col + 0.5) * CELL_SIZE;
+    const fy = GRID_TOP + (row + 0.5) * CELL_SIZE;
+    spawnFloat('Blocked!', fx, fy, '#ff4444', 20);
+    return;
+  }
+  treats--;
+  updateUI();
+  const cellL = getCell(dogRow, leftCol);
+  const cellR = getCell(dogRow, leftCol + 1);
+  setCell(dogRow, leftCol, null);
+  setCell(dogRow, leftCol + 1, null);
+  if(dir === -1) {
+    setCell(dogRow, leftCol - 1, cellL);
+    setCell(dogRow, leftCol, cellR);
+  } else {
+    setCell(dogRow, leftCol + 1, cellL);
+    setCell(dogRow, leftCol + 2, cellR);
+  }
+  nudging = true;
+  nudgeStartTime = performance.now();
+  nudgeDirection = dir;
+  nudgeCells = dir === -1
+    ? [{row: dogRow, col: leftCol - 1}, {row: dogRow, col: leftCol}]
+    : [{row: dogRow, col: leftCol + 1}, {row: dogRow, col: leftCol + 2}];
+  setTimeout(async () => {
+    nudging = false;
+    chainLevel = 0;
+    await processMatches();
+  }, NUDGE_DURATION + 50);
+}
+
+function performSwap(cellsA, cellsB) {
+  const dataA = cellsA.map(c => ({...c, data: {...getCell(c.row, c.col)}}));
+  const dataB = cellsB.map(c => ({...c, data: {...getCell(c.row, c.col)}}));
+  dataA.forEach(c => setCell(c.row, c.col, null));
+  dataB.forEach(c => setCell(c.row, c.col, null));
+  dataA.forEach((c, i) => { if(i < dataB.length) setCell(dataB[i].row, dataB[i].col, c.data); });
+  dataB.forEach((c, i) => { if(i < dataA.length) setCell(dataA[i].row, dataA[i].col, c.data); });
+  setTimeout(async () => {
+    chainLevel = 0;
+    await processMatches();
+  }, 200);
+}
+
+function handlePointerDown(x, y) {
+  if(iris.active) return;
+  if(gameScreen === SCREEN.WELCOME) { handleWelcomeClick(x, y); return; }
+  if(gameScreen === SCREEN.MAP) { handleMapClick(x, y); return; }
+  // Mute icon click (bottom-left during gameplay, orange circle)
+  {
+    const mbr = 25, mbcx = mbr + 12, mbcy = H - mbr - 12;
+    if(Math.sqrt((x - mbcx) * (x - mbcx) + (y - mbcy) * (y - mbcy)) <= mbr) {
+      toggleMute();
       return;
     }
   }
-  
-  // Check if clicking on grid cell (for swapping)
-  if(x >= GRID_LEFT && x < GRID_LEFT + GRID_COLS * CELL_W &&
-     y >= GRID_TOP && y < GRID_TOP + GRID_ROWS * CELL_H && !animatingMatch) {
-    const col = Math.floor((x - GRID_LEFT) / CELL_W);
-    const row = Math.floor((y - GRID_TOP) / CELL_H);
-    
+
+  if(!gameRunning || animatingMatch || nudging) return;
+
+  // 0. Acorn throw at squirrel (priority during squirrel attack)
+  if((squirrelActive || squirrelAlertActive) && y >= HIT_ZONE_TOP && y <= HIT_ZONE_BOTTOM) {
+    if(acorns > 0 && squirrelActive && !squirrelRetreating) {
+      acorns--;
+      updateUI();
+      acornProjectiles.push({
+        startX: x, startY: H,
+        targetX: x, targetY: y,
+        x: x, y: H,
+        startTime: performance.now()
+      });
+    }
+    return;
+  }
+
+  // 1. Check ball grab (bottom center area)
+  if(!throwing && !dropping && currentDog) {
+    const bx = BALL_ORIGIN_X, by = BALL_DRAW_Y;
+    const dist = Math.sqrt((x - bx) * (x - bx) + (y - by) * (y - by));
+    if(dist < BALL_GRAB_RADIUS) {
+      ballGrabbed = true;
+      ballGrabStartX = x;
+      ballGrabStartY = y;
+      ballDragX = x;
+      ballDragY = y;
+      return;
+    }
+  }
+
+  // 2. Check grid dog for drag/nudge start
+  if(x >= GRID_LEFT && x < GRID_LEFT + GRID_COLS * CELL_SIZE &&
+     y >= GRID_TOP && y < GRID_TOP + GRID_ROWS * CELL_SIZE) {
+    const col = Math.floor((x - GRID_LEFT) / CELL_SIZE);
+    const row = Math.floor((y - GRID_TOP) / CELL_SIZE);
     if(getCell(row, col)) {
-      if(selectedCell) {
-        // Try to swap
-        if(areAdjacent(selectedCell.row, selectedCell.col, row, col)) {
-          swapCells(selectedCell.row, selectedCell.col, row, col);
-          setTimeout(() => processMatches(), 200);
-        }
-        selectedCell = null;
-      } else {
-        selectedCell = {row, col};
+      const dogCells = findDogCells(row, col);
+      if(dogCells && dogCells.length >= 2) {
+        dragging = true;
+        dragStartRow = row;
+        dragStartCol = col;
+        dragStartCells = dogCells;
+        dragOriginX = x;
+        dragOriginY = y;
+        dragMouseX = x;
+        dragMouseY = y;
+        dragDidMove = false;
       }
     }
   }
-  
-  // Otherwise drop the dog
-  if(!dropping && currentDog) {
-    dropDog();
+}
+
+function handlePointerMove(x, y) {
+  if(iris.active) return;
+  if(gameScreen === SCREEN.WELCOME) {
+    const b = WELCOME_BTN;
+    const bdx = x - b.x, bdy = y - b.y;
+    welcomeBtnHovered = (Math.sqrt(bdx*bdx + bdy*bdy) <= b.r);
+    canvas.style.cursor = welcomeBtnHovered ? 'pointer' : 'default';
+    return;
+  }
+  if(gameScreen === SCREEN.MAP) {
+    mapHoveredLevel = -1;
+    const rb = MAP_RESET_BTN;
+    const mb = MAP_MUTE_BTN;
+    mapResetHovered = (Math.sqrt((x - rb.cx) * (x - rb.cx) + (y - rb.cy) * (y - rb.cy)) <= rb.r);
+    mapMuteHovered = (Math.sqrt((x - mb.cx) * (x - mb.cx) + (y - mb.cy) * (y - mb.cy)) <= mb.r);
+    for(let i = 0; i < MAP_LEVELS.length; i++) {
+      const lv = MAP_LEVELS[i];
+      const edx = (x - lv.x) / (MAP_OVAL_RX + 10);
+      const edy = (y - lv.y) / (MAP_OVAL_RY + 8);
+      if(edx*edx + edy*edy <= 1) {
+        const isCurrent = (i === currentLevel) && !completedLevels[i];
+        if(isCurrent) mapHoveredLevel = i;
+      }
+    }
+    canvas.style.cursor = (mapHoveredLevel >= 0 || mapResetHovered || mapMuteHovered) ? 'pointer' : 'default';
+    return;
+  }
+  if(!gameRunning) return;
+
+  // Ball grab aiming
+  if(ballGrabbed) {
+    ballDragX = x;
+    ballDragY = y;
+    const rawCol = (x - GRID_LEFT) / CELL_SIZE;
+    aimTargetCol = Math.round(Math.max(0, Math.min(GRID_COLS - 2, rawCol)));
+    // Arc peak Y matches mouse Y position, clamped to grid range
+    aimPeakY = Math.max(GRID_TOP - 30, Math.min(GRID_BOTTOM, y));
+    canvas.style.cursor = 'grabbing';
+    return;
+  }
+
+  mouseCanvasX = x;
+  mouseCanvasY = y;
+
+  // Hover tracking for grid dogs + cursor
+  hoverRow = -1; hoverCol = -1;
+  if(x >= GRID_LEFT && x < GRID_LEFT + GRID_COLS * CELL_SIZE &&
+     y >= GRID_TOP && y < GRID_TOP + GRID_ROWS * CELL_SIZE) {
+    const gc = Math.floor((x - GRID_LEFT) / CELL_SIZE);
+    const gr = Math.floor((y - GRID_TOP) / CELL_SIZE);
+    if(getCell(gr, gc)) { hoverRow = gr; hoverCol = gc; }
+  }
+
+  // Check ball hover
+  const bDist = Math.sqrt((x - BALL_ORIGIN_X) * (x - BALL_ORIGIN_X) + (y - BALL_DRAW_Y) * (y - BALL_DRAW_Y));
+  const onBall = bDist < BALL_GRAB_RADIUS && !throwing && !dropping && currentDog;
+
+  // Crosshair cursor in hit zone during squirrel attack (use 'none' so we draw our own big crosshair)
+  const inHitZone = squirrelActive && y >= HIT_ZONE_TOP && y <= HIT_ZONE_BOTTOM;
+  canvas.style.cursor = dragging ? 'grabbing' : (inHitZone ? 'none' : (onBall ? 'grab' : (hoverRow >= 0 ? 'grab' : 'default')));
+
+  // Track drag movement for grid dogs (compare to original start, not last position)
+  if(dragging) {
+    const dx = x - dragOriginX;
+    if(Math.abs(dx) > 15) dragDidMove = true;
+    dragMouseX = x;
+    dragMouseY = y;
+  }
+}
+
+function handlePointerUp(x, y) {
+  if(!gameRunning) return;
+
+  // Ball release = throw
+  if(ballGrabbed) {
+    ballGrabbed = false;
+    canvas.style.cursor = 'default';
+    // Check if dragged far enough from start to count as a throw
+    const pullDist = Math.sqrt((x - ballGrabStartX) * (x - ballGrabStartX) + (y - ballGrabStartY) * (y - ballGrabStartY));
+    if(pullDist < 15) return; // cancelled - didn't drag enough
+    // Arc peak is already set from mouse Y during drag (aimPeakY)
+    // Check valid landing
+    const rawCol = (x - GRID_LEFT) / CELL_SIZE;
+    aimTargetCol = Math.round(Math.max(0, Math.min(GRID_COLS - 2, rawCol)));
+    if(!throwing && !dropping && currentDog) {
+      throwDog();
+    }
+    return;
+  }
+
+  // Grid dog drag release
+  if(dragging) {
+    dragging = false;
+    let handled = false;
+    if(dragDidMove && dragStartCells) {
+      // Try swap first
+      const col = Math.floor((x - GRID_LEFT) / CELL_SIZE);
+      const row = Math.floor((y - GRID_TOP) / CELL_SIZE);
+      if(col >= 0 && col < GRID_COLS && row >= 0 && row < GRID_ROWS) {
+        const targetCell = getCell(row, col);
+        if(targetCell) {
+          const targetDogCells = findDogCells(row, col);
+          if(targetDogCells && targetDogCells.length >= 2 &&
+             !dragStartCells.some(c => targetDogCells.some(d => d.row === c.row && d.col === c.col))) {
+            let adjacent = false;
+            for(const a of dragStartCells) {
+              for(const b of targetDogCells) {
+                if((Math.abs(a.row - b.row) === 1 && a.col === b.col) ||
+                   (Math.abs(a.col - b.col) === 1 && a.row === b.row)) { adjacent = true; break; }
+              }
+              if(adjacent) break;
+            }
+            if(adjacent) {
+              performSwap(dragStartCells, targetDogCells);
+              dragStartCells = null;
+              handled = true;
+            }
+          }
+        }
+      }
+      // If swap didn't happen, nudge in drag direction
+      if(!handled && !nudging && dragStartCells) {
+        const swipeDir = (x - dragOriginX) >= 0 ? 1 : -1;
+        performNudge(dragStartRow, dragStartCol, swipeDir);
+        handled = true;
+      }
+    } else if(!dragDidMove) {
+      if(!nudging && dragStartCells) {
+        performNudge(dragStartRow, dragStartCol);
+      }
+    }
+    dragStartCells = null;
+    return;
+  }
+}
+
+// Mouse events
+canvas.addEventListener('mousedown', (e) => {
+  const {x, y} = getCanvasPos(e);
+  handlePointerDown(x, y);
+});
+canvas.addEventListener('mousemove', (e) => {
+  const {x, y} = getCanvasPos(e);
+  handlePointerMove(x, y);
+});
+canvas.addEventListener('mouseup', (e) => {
+  const {x, y} = getCanvasPos(e);
+  handlePointerUp(x, y);
+});
+
+// Touch events
+function getTouchPos(e) {
+  const t = e.touches[0] || e.changedTouches[0];
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (t.clientX - rect.left) * (W / rect.width),
+    y: (t.clientY - rect.top) * (H / rect.height)
+  };
+}
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  const {x, y} = getTouchPos(e);
+  handlePointerDown(x, y);
+}, {passive: false});
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  const {x, y} = getTouchPos(e);
+  handlePointerMove(x, y);
+}, {passive: false});
+canvas.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  const {x, y} = getTouchPos(e);
+  handlePointerUp(x, y);
+}, {passive: false});
+
+document.getElementById('goBtn').addEventListener('click', beginLevel);
+document.getElementById('nextLevelBtn').addEventListener('click', nextLevel);
+document.getElementById('retryBtn').addEventListener('click', retryLevel);
+document.getElementById('restartBtn').addEventListener('click', restartFromGameOver);
+
+// Debug: Press "S" to force-spawn squirrel
+document.addEventListener('keydown', (e) => {
+  if(e.key === 's' || e.key === 'S') {
+    if(gameRunning && !squirrelActive && !squirrelAlertActive) {
+      console.log('DEBUG: Force-spawning squirrel via S key');
+      startSquirrelAlert();
+    }
   }
 });
-
-canvas.addEventListener('mousemove', (e) => {
-  if(!gameRunning || dropping || !currentDog) return;
-  
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  
-  dogX = Math.max(0, Math.min(GRID_COLS - (currentDog.orientation === 'h' ? 2 : 1),
-    (x - GRID_LEFT) / CELL_W));
-});
-
-document.getElementById('startBtn').addEventListener('click', startGame);
-document.getElementById('restartBtn').addEventListener('click', startGame);
 
 // ============================================================
 // DRAW
 // ============================================================
-function draw() {
-  // Background
-  if(bgLoaded) {
-    ctx.drawImage(bgImg, 0, 0, W, H);
+function draw(timestamp) {
+  const now = timestamp || performance.now();
+  updateIris(now);
+
+  if(gameScreen === SCREEN.WELCOME) {
+    drawWelcomeScreen();
+    drawIris();
+    requestAnimationFrame(draw);
+    return;
+  }
+  if(gameScreen === SCREEN.MAP) {
+    drawMapScreen(now);
+    drawIris();
+    requestAnimationFrame(draw);
+    return;
+  }
+
+  // ---- GAMEPLAY RENDERING ----
+  // Update timer
+  if(timerRunning && gameRunning) {
+    const lvl = LEVELS[currentLevel];
+    timeRemaining = Math.max(0, lvl.time - (now - timerStart) / 1000);
+    updateUI();
+    if(timeRemaining <= 0) {
+      timerRunning = false;
+      if(acorns >= lvl.goal) levelComplete();
+      else timeUp();
+    }
+  }
+
+  // Update squirrel system
+  updateSquirrel(now);
+  updateAcornProjectiles(now);
+
+  // Background (per-level, shifted up to show more grass)
+  const lvlBg = bgImgs[activeBgLevel] && bgImgs[activeBgLevel]._loaded ? bgImgs[activeBgLevel] : (bgLoaded ? bgImg : null);
+  if(lvlBg) {
+    const imgR = lvlBg.width / lvlBg.height, canR = W / H;
+    let sx = 0, sy = 0, sw = lvlBg.width, sh = lvlBg.height;
+    if(imgR > canR) { sw = lvlBg.height * canR; sx = (lvlBg.width - sw) / 2; }
+    else { sh = lvlBg.width / canR; sy = (lvlBg.height - sh) / 2; }
+    const shift = sh * 0.15;
+    sy = Math.min(sy + shift, lvlBg.height - sh);
+    ctx.drawImage(lvlBg, sx, sy, sw, sh, 0, 0, W, H);
   } else {
     ctx.fillStyle = '#87CEEB';
     ctx.fillRect(0, 0, W, H);
   }
-  
+
   // Grid background
   ctx.fillStyle = 'rgba(255,255,255,0.15)';
-  ctx.fillRect(GRID_LEFT, GRID_TOP, GRID_COLS * CELL_W, GRID_ROWS * CELL_H);
-  
+  ctx.fillRect(GRID_LEFT, GRID_TOP, GRID_COLS * CELL_SIZE, GRID_ROWS * CELL_SIZE);
+
   // Grid lines
   ctx.strokeStyle = 'rgba(255,255,255,0.3)';
   ctx.lineWidth = 1;
   for(let c = 0; c <= GRID_COLS; c++) {
-    const x = GRID_LEFT + c * CELL_W;
-    ctx.beginPath();
-    ctx.moveTo(x, GRID_TOP);
-    ctx.lineTo(x, GRID_TOP + GRID_ROWS * CELL_H);
-    ctx.stroke();
+    const gx = GRID_LEFT + c * CELL_SIZE;
+    ctx.beginPath(); ctx.moveTo(gx, GRID_TOP); ctx.lineTo(gx, GRID_BOTTOM); ctx.stroke();
   }
   for(let r = 0; r <= GRID_ROWS; r++) {
-    const y = GRID_TOP + r * CELL_H;
-    ctx.beginPath();
-    ctx.moveTo(GRID_LEFT, y);
-    ctx.lineTo(GRID_LEFT + GRID_COLS * CELL_W, y);
-    ctx.stroke();
+    const gy = GRID_TOP + r * CELL_SIZE;
+    ctx.beginPath(); ctx.moveTo(GRID_LEFT, gy); ctx.lineTo(GRID_LEFT + GRID_COLS * CELL_SIZE, gy); ctx.stroke();
   }
-  
-  // Draw placed dogs
+
+  // Dogs with Z-order
+  // Even rows: dogs face LEFT, draw LEFT-to-RIGHT (rightmost on top)
+  // Odd rows: dogs face RIGHT, draw RIGHT-to-LEFT (leftmost on top)
   for(let r = 0; r < GRID_ROWS; r++) {
-    for(let c = 0; c < GRID_COLS; c++) {
+    const oddRow = (r % 2 === 1);
+    const cStart = oddRow ? GRID_COLS - 1 : 0;
+    const cEnd = oddRow ? -1 : GRID_COLS;
+    const cStep = oddRow ? -1 : 1;
+
+    for(let c = cStart; c !== cEnd; c += cStep) {
       const cell = getCell(r, c);
-      if(cell) {
-        const x = GRID_LEFT + c * CELL_W;
-        const y = GRID_TOP + r * CELL_H;
-        
-        // Highlight matching cells
-        const isMatching = matchingCells.some(m => m.row === r && m.col === c);
-        if(isMatching) {
-          ctx.fillStyle = 'rgba(255,255,0,0.4)';
-          ctx.fillRect(x, y, CELL_W, CELL_H);
-        }
-        
-        // Highlight selected cell
-        if(selectedCell && selectedCell.row === r && selectedCell.col === c) {
-          ctx.fillStyle = 'rgba(100,200,255,0.5)';
-          ctx.fillRect(x, y, CELL_W, CELL_H);
-        }
-        
-        // Draw dog image
-        const img = dogImages[cell.breed];
+      if(!cell) continue;
+      const gx = GRID_LEFT + c * CELL_SIZE;
+      const gy = GRID_TOP + r * CELL_SIZE;
+
+      const isMatching = matchingCells.some(m => m.row === r && m.col === c);
+      if(isMatching) {
+        const pulseT = (now - matchPulseStart) / 200;
+        ctx.fillStyle = `rgba(255,255,0,${0.3 + 0.4 * Math.abs(Math.sin(pulseT * Math.PI))})`;
+        ctx.fillRect(gx, gy, CELL_SIZE, CELL_SIZE);
+      }
+
+      // Nudge animation offset
+      let nudgeOffsetX = 0;
+      if(nudging && nudgeCells.some(nc => nc.row === r && nc.col === c)) {
+        const nt = Math.min((now - nudgeStartTime) / NUDGE_DURATION, 1);
+        nudgeOffsetX = -nudgeDirection * CELL_SIZE * (1 - nt);
+      }
+
+      if(cell.primary) {
+        const img = dogLyingImages[cell.breed];
         if(img && img.complete) {
-          if(cell.orientation === 'v') {
-            ctx.drawImage(img, x, y, CELL_W, CELL_H * 2);
+          const ov = SPRITE_OVERFLOW;
+          const imgRatio = img.width / img.height;
+          const flipH = (r % 2 === 1);
+
+          let extraScale = 1.0;
+          let bounceOffsetY = 0;
+          if(bouncing && bounceCells.some(bc => bc.row === r && bc.col === c)) {
+            const bt = (now - bounceStartTime) / BOUNCE_DURATION;
+            if(bt < 1) {
+              // 3 diminishing bounces using abs(sin) with decay
+              const bounceCount = 3;
+              const phase = bt * bounceCount * Math.PI;
+              const decay = 1 - bt;
+              bounceOffsetY = -Math.abs(Math.sin(phase)) * throwBounceHeight * decay * decay;
+            }
+          }
+          if(isMatching) {
+            const pt = (now - matchPulseStart) / 200;
+            extraScale = 1 + 0.15 * Math.abs(Math.sin(pt * Math.PI));
+          }
+
+          const areaW = CELL_SIZE * 2 * (1 + ov);
+          const areaH = CELL_SIZE * (1 + ov);
+          let drawW, drawH;
+          if(imgRatio > areaW / areaH) { drawW = areaW; drawH = areaW / imgRatio; }
+          else { drawH = areaH; drawW = areaH * imgRatio; }
+          drawW *= extraScale; drawH *= extraScale;
+
+          if(cell.orientation === 'h') {
+            ctx.save();
+            ctx.translate(gx + CELL_SIZE + nudgeOffsetX, gy + CELL_SIZE / 2 + bounceOffsetY);
+            if(flipH) ctx.scale(-1, 1);
+            ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+            ctx.restore();
           } else {
             ctx.save();
-            ctx.translate(x + CELL_W, y);
+            ctx.translate(gx + CELL_SIZE / 2 + nudgeOffsetX, gy + CELL_SIZE + bounceOffsetY);
             ctx.rotate(Math.PI / 2);
-            ctx.drawImage(img, 0, -CELL_W, CELL_H * 2, CELL_W);
+            if(flipH) ctx.scale(-1, 1);
+            ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
             ctx.restore();
           }
         }
       }
     }
   }
-  
-  // Draw current dog
-  if(currentDog && !dropping && gameRunning) {
-    const x = GRID_LEFT + dogX * CELL_W;
-    const y = GRID_TOP + dogY * CELL_H;
-    const img = dogImages[currentDog.breed];
-    
-    if(img && img.complete) {
-      ctx.globalAlpha = 0.7;
-      if(currentDog.orientation === 'v') {
-        ctx.drawImage(img, x, y, CELL_W, CELL_H * 2);
+
+  // ---- COLLAPSE ANIMATION ----
+  if(collapseActive) {
+    const cElapsed = now - collapseStartTime;
+    const fallDuration = 600; // each dog falls over 600ms once started
+    for(const cd of collapseDogs) {
+      // t = 0 (hasn't started falling) to 1 (fully off screen)
+      const localElapsed = cElapsed - cd.delay;
+      if(localElapsed < 0) {
+        // Not started yet — draw in place
+        var t = 0;
       } else {
+        var t = Math.min(1, localElapsed / fallDuration);
+      }
+      // Ease-in (accelerating fall like gravity)
+      const eased = t * t;
+      const fallY = eased * (H - GRID_TOP + 100);
+      const rot = eased * cd.rotDir * 1.2;
+      const alpha = 1 - t * 0.8;
+      if(alpha <= 0.01) continue;
+
+      const gx = GRID_LEFT + cd.col * CELL_SIZE;
+      const gy = GRID_TOP + cd.row * CELL_SIZE;
+      const img = dogLyingImages[cd.breed];
+      if(img && img.complete) {
         ctx.save();
-        ctx.translate(x + CELL_W, y);
-        ctx.rotate(Math.PI / 2);
-        ctx.drawImage(img, 0, -CELL_W, CELL_H * 2, CELL_W);
+        ctx.globalAlpha = Math.max(0, alpha);
+        const cx = cd.orientation === 'h' ? gx + CELL_SIZE : gx + CELL_SIZE / 2;
+        const cy = cd.orientation === 'h' ? gy + CELL_SIZE / 2 : gy + CELL_SIZE;
+        ctx.translate(cx, cy + fallY);
+        ctx.rotate(rot);
+        const ov = SPRITE_OVERFLOW;
+        const areaW = cd.orientation === 'h' ? CELL_SIZE * 2 * (1 + ov) : CELL_SIZE * (1 + ov);
+        const areaH = cd.orientation === 'h' ? CELL_SIZE * (1 + ov) : CELL_SIZE * 2 * (1 + ov);
+        const imgR = img.width / img.height;
+        let dw, dh;
+        if(imgR > areaW / areaH) { dw = areaW; dh = areaW / imgR; }
+        else { dh = areaH; dw = areaH * imgR; }
+        ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
         ctx.restore();
       }
-      ctx.globalAlpha = 1;
     }
   }
-  
-  // Draw tree
-  if(treeLoaded) {
-    const treeH = H * 0.9;
-    const treeW = treeImg.width * (treeH / treeImg.height);
-    ctx.drawImage(treeImg, 0, H - treeH, treeW, treeH);
+
+  // ---- SQUIRREL: Hit zone overlay, squirrel sprite, acorn projectiles ----
+  if(squirrelActive && gameRunning) {
+    // Squirrel sprite
+    if(squirrelHitAnim) {
+      // Hit animation: show sq-acorn, scale up 2x, fade out
+      const hitT = (now - squirrelHitAnimStart) / SQUIRREL_HIT_ANIM_DURATION;
+      const useImg = (sqAcornLoaded && sqAcornImg.complete) ? sqAcornImg : sqStepImg;
+      const hitScale = 1 + hitT * 1.0; // 1x to 2x
+      const hitAlpha = hitT < 0.6 ? 1.0 : 1.0 - ((hitT - 0.6) / 0.4); // fade in last 40%
+      const sqW = SQUIRREL_SIZE * hitScale;
+      const sqH = sqW * (useImg.height / useImg.width);
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, hitAlpha);
+      ctx.translate(squirrelX, SQUIRREL_Y);
+      const actualMoveDir = squirrelReversed ? -squirrelDir : squirrelDir;
+      if(actualMoveDir > 0) ctx.scale(-1, 1);
+      ctx.drawImage(useImg, -sqW / 2, -sqH, sqW, sqH);
+      ctx.restore();
+    } else {
+      const sqImg = squirrelFrame === 0 ? sqStepImg : sqJumpImg;
+      const sqLoaded = squirrelFrame === 0 ? sqStepLoaded : sqJumpLoaded;
+      if(sqLoaded && sqImg.complete) {
+        const sqW = SQUIRREL_SIZE;
+        const sqH = SQUIRREL_SIZE * (sqImg.height / sqImg.width);
+        ctx.save();
+        const jumpOffset = (squirrelFrame === 1) ? -22 : 0;
+        ctx.translate(squirrelX, SQUIRREL_Y + jumpOffset);
+        // Default image faces LEFT. Flip when moving RIGHT.
+        const actualMoveDir = squirrelReversed ? -squirrelDir : squirrelDir;
+        if(actualMoveDir > 0) ctx.scale(-1, 1);
+        ctx.drawImage(sqImg, -sqW / 2, -sqH, sqW, sqH);
+        ctx.restore();
+      }
+    }
+
   }
-  
+
+  // Acorn projectiles
+  for(const p of acornProjectiles) {
+    ctx.save();
+    const acornSize = 28 * (p.scale || 1);
+    if(acornLoaded && acornImg.complete) {
+      const aw = acornSize;
+      const ah = acornSize * (acornImg.height / acornImg.width);
+      ctx.drawImage(acornImg, p.x - aw / 2, p.y - ah / 2, aw, ah);
+    } else {
+      ctx.font = (acornSize * 0.7) + 'px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('\u{1F330}', p.x, p.y);
+    }
+    ctx.restore();
+  }
+
+  // Starburst effects
+  starbursts = starbursts.filter(sb => {
+    const elapsed = (now - sb.startTime) / 1000;
+    if(elapsed > 0.5) return false;
+    const t = elapsed / 0.5;
+    ctx.save();
+    ctx.globalAlpha = 1 - t;
+    for(const pt of sb.particles) {
+      const px = sb.x + Math.cos(pt.angle) * pt.speed * t;
+      const py = sb.y + Math.sin(pt.angle) * pt.speed * t;
+      const sz = pt.size * (1 - t * 0.5);
+      ctx.fillStyle = pt.color;
+      ctx.beginPath();
+      ctx.arc(px, py, sz, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+    return true;
+  });
+
+  // Custom large crosshair cursor during squirrel attack
+  if(squirrelActive && gameRunning && !ballGrabbed && mouseCanvasY >= HIT_ZONE_TOP && mouseCanvasY <= HIT_ZONE_BOTTOM) {
+    const cx = mouseCanvasX, cy = mouseCanvasY;
+    const crossSize = 20; // half-length of each arm
+    ctx.save();
+    ctx.strokeStyle = '#ff2222';
+    ctx.lineWidth = 3;
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 4;
+    // Horizontal line
+    ctx.beginPath();
+    ctx.moveTo(cx - crossSize, cy);
+    ctx.lineTo(cx + crossSize, cy);
+    ctx.stroke();
+    // Vertical line
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - crossSize);
+    ctx.lineTo(cx, cy + crossSize);
+    ctx.stroke();
+    // Center dot
+    ctx.fillStyle = '#ff2222';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+    ctx.fill();
+    // Outer circle
+    ctx.strokeStyle = 'rgba(255,34,34,0.6)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, crossSize - 2, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // "SQUIRREL!" alert text
+  if(squirrelAlertActive && gameRunning) {
+    const alertT = (now - squirrelAlertStart) / SQUIRREL_ALERT_DURATION;
+    const shakeX = (Math.random() - 0.5) * 8;
+    const shakeY = (Math.random() - 0.5) * 6;
+    const alertScale = 1 + 0.1 * Math.abs(Math.sin(alertT * 8 * Math.PI));
+    ctx.save();
+    ctx.translate(W / 2 + shakeX, H / 2 - 40 + shakeY);
+    ctx.scale(alertScale, alertScale);
+    ctx.font = 'bold 48px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+    ctx.lineWidth = 5;
+    ctx.strokeText('SQUIRREL!', 0, 0);
+    ctx.fillStyle = '#ff4422';
+    ctx.fillText('SQUIRREL!', 0, 0);
+    ctx.restore();
+  }
+
+  // Hover highlight on grid dogs
+  if(!dragging && hoverRow >= 0 && hoverCol >= 0 && gameRunning && !animatingMatch) {
+    const hDog = findDogCells(hoverRow, hoverCol);
+    if(hDog) {
+      for(const dc of hDog) {
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.fillRect(GRID_LEFT + dc.col * CELL_SIZE, GRID_TOP + dc.row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      }
+    }
+  }
+
+  // Drag visual feedback
+  if(dragging && dragStartCells) {
+    // Glow border on entire dog (single unified box)
+    if(dragStartCells.length >= 2) {
+      const minCol = Math.min(...dragStartCells.map(c => c.col));
+      const maxCol = Math.max(...dragStartCells.map(c => c.col));
+      const minRow = Math.min(...dragStartCells.map(c => c.row));
+      const maxRow = Math.max(...dragStartCells.map(c => c.row));
+      const bx = GRID_LEFT + minCol * CELL_SIZE;
+      const by = GRID_TOP + minRow * CELL_SIZE;
+      const bw = (maxCol - minCol + 1) * CELL_SIZE;
+      const bh = (maxRow - minRow + 1) * CELL_SIZE;
+      ctx.save();
+      ctx.shadowColor = '#4df';
+      ctx.shadowBlur = 12;
+      ctx.strokeStyle = '#4df';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(bx + 1, by + 1, bw - 2, bh - 2);
+      ctx.restore();
+    }
+    if(dragDidMove) {
+      // Arrow indicator near cursor
+      ctx.font = 'bold 22px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fff';
+      ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+      ctx.lineWidth = 3;
+      ctx.strokeText('\u21D4', dragMouseX, dragMouseY - 20);
+      ctx.fillText('\u21D4', dragMouseX, dragMouseY - 20);
+
+      // Highlight valid adjacent swap targets
+      const dhc = Math.floor((dragMouseX - GRID_LEFT) / CELL_SIZE);
+      const dhr = Math.floor((dragMouseY - GRID_TOP) / CELL_SIZE);
+      if(dhc >= 0 && dhc < GRID_COLS && dhr >= 0 && dhr < GRID_ROWS) {
+        const hCell = getCell(dhr, dhc);
+        if(hCell) {
+          const hDog = findDogCells(dhr, dhc);
+          if(hDog && hDog.length >= 2 &&
+             !dragStartCells.some(c => hDog.some(d => d.row === c.row && d.col === c.col))) {
+            let adj = false;
+            for(const a of dragStartCells) {
+              for(const b of hDog) {
+                if((Math.abs(a.row - b.row) === 1 && a.col === b.col) ||
+                   (Math.abs(a.col - b.col) === 1 && a.row === b.row)) { adj = true; break; }
+              }
+              if(adj) break;
+            }
+            const color = adj ? 'rgba(100,255,100,0.5)' : 'rgba(255,100,100,0.35)';
+            for(const dc of hDog) {
+              ctx.fillStyle = color;
+              ctx.fillRect(GRID_LEFT + dc.col * CELL_SIZE, GRID_TOP + dc.row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Tree removed - integrated into backgrounds
+
+  // Aiming arrow (drawn BEHIND ball, pivot at CENTER of ball)
+  if(ballGrabbed && currentDog && !throwing && !dropping && gameRunning) {
+    const landRow = findLandingRow(aimTargetCol, currentDog.orientation);
+    if(landRow >= 0) {
+      const targetX = GRID_LEFT + aimTargetCol * CELL_SIZE + CELL_SIZE;
+      const targetY = GRID_TOP + landRow * CELL_SIZE + CELL_SIZE / 2;
+      // Pivot = ball center
+      const pivotX = BALL_ORIGIN_X;
+      const pivotY = BALL_DRAW_Y;
+      const angle = Math.atan2(targetY - pivotY, targetX - pivotX);
+      // Arrow image points UP (-Y). Rotate by (angle + PI/2) to aim at target.
+      const rotation = angle + Math.PI / 2;
+      // Arrow: base hidden behind ball, tip extends 70px beyond ball edge
+      // Ball grabbed radius = 70. Arrow starts at 40px from center (inside ball),
+      // extends to 140px from center (70px past the ball edge).
+      const arrowH = 100; // arrow image length
+      const arrowOffset = 40; // distance from center to arrow base
+      if(arrowLoaded && arrowImg.complete && arrowImg.naturalWidth > 0) {
+        const arrowW = arrowH * (arrowImg.width / arrowImg.height);
+        ctx.save();
+        ctx.translate(pivotX, pivotY);
+        ctx.rotate(rotation);
+        ctx.globalAlpha = 0.85;
+        // Draw arrow from -arrowOffset (base, inside ball) to -(arrowOffset+arrowH) (tip, outside)
+        ctx.drawImage(arrowImg, -arrowW / 2, -arrowOffset - arrowH, arrowW, arrowH);
+        ctx.restore();
+      } else {
+        // Fallback: canvas-drawn arrow
+        ctx.save();
+        ctx.translate(pivotX, pivotY);
+        ctx.rotate(rotation);
+        ctx.globalAlpha = 0.85;
+        const tipY = -(arrowOffset + arrowH);
+        const baseY = -arrowOffset;
+        const grad = ctx.createLinearGradient(0, baseY, 0, tipY);
+        grad.addColorStop(0, '#ffcc44');
+        grad.addColorStop(1, '#ff8800');
+        ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+        ctx.lineWidth = 10;
+        ctx.beginPath(); ctx.moveTo(0, baseY); ctx.lineTo(0, tipY + 20); ctx.stroke();
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.moveTo(0, baseY); ctx.lineTo(0, tipY + 20); ctx.stroke();
+        ctx.fillStyle = '#ff8800';
+        ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, tipY);
+        ctx.lineTo(-10, tipY + 22);
+        ctx.lineTo(10, tipY + 22);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
+
+  // Tennis ball at bottom center with floating animation + 3D ring
+  if(tennisLoaded && gameRunning && !throwing) {
+    const ballSize = ballGrabbed ? 120 : 90;
+    const floatAmp = 3;
+    const floatSpeed = now / 500; // ~0.8s full cycle (faster)
+    const ballFloatY = ballGrabbed ? 0 : Math.sin(floatSpeed) * floatAmp;
+    const ringFloatY = ballGrabbed ? 0 : Math.sin(floatSpeed) * -floatAmp;
+    const ringPulse = ballGrabbed ? 1.0 : 0.7 + 0.3 * ((Math.sin(floatSpeed) + 1) / 2);
+    const bx = BALL_ORIGIN_X;
+    const by = BALL_DRAW_Y + ballFloatY;
+    const ringW = ballSize * 0.78;
+    const ringH = 10;
+    const ringY = BALL_DRAW_Y + ringFloatY;
+
+    ctx.save();
+    // BACK half of ring (behind ball) - top arc = back of Saturn ring
+    if(!ballGrabbed) {
+      ctx.save();
+      ctx.globalAlpha = ringPulse * 0.4;
+      ctx.shadowColor = '#66ddff';
+      ctx.shadowBlur = 14;
+      ctx.strokeStyle = '#66ddff';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.ellipse(bx, ringY, ringW, ringH, 0, Math.PI, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = ringPulse * 0.6;
+      ctx.shadowBlur = 4;
+      ctx.strokeStyle = '#aaeeff';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(bx, ringY, ringW - 3, ringH - 1, 0, Math.PI, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Ball
+    if(ballGrabbed) {
+      ctx.shadowColor = '#ffe066';
+      ctx.shadowBlur = 20;
+    }
+    ctx.drawImage(tennisImg, bx - ballSize / 2, by - ballSize / 2, ballSize, ballSize);
+
+    // FRONT half of ring (in front of ball) - bottom arc = front of Saturn ring
+    if(!ballGrabbed) {
+      ctx.save();
+      ctx.globalAlpha = ringPulse * 0.7;
+      ctx.shadowColor = '#66ddff';
+      ctx.shadowBlur = 14;
+      ctx.strokeStyle = '#66ddff';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.ellipse(bx, ringY, ringW, ringH, 0, 0, Math.PI);
+      ctx.stroke();
+      ctx.globalAlpha = ringPulse * 0.95;
+      ctx.shadowBlur = 6;
+      ctx.strokeStyle = '#aaeeff';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(bx, ringY, ringW - 3, ringH - 1, 0, 0, Math.PI);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    ctx.restore();
+  }
+
+  // Aim arc + landing highlight (drawn ON TOP of ball, tree, everything)
+  if(ballGrabbed && currentDog && !throwing && !dropping && gameRunning) {
+    const landRow = findLandingRow(aimTargetCol, currentDog.orientation);
+    if(landRow >= 0) {
+      const points = calculateBallArc(aimTargetCol, landRow, 30, aimPeakY);
+      // Build path from on-screen points only
+      const visiblePoints = points.filter(p => p.y <= H);
+      if(visiblePoints.length > 1) {
+        // Dark outline for contrast against sky (50% opacity)
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+        ctx.lineWidth = 6;
+        ctx.setLineDash([10, 8]);
+        ctx.beginPath();
+        ctx.moveTo(visiblePoints[0].x, visiblePoints[0].y);
+        for(let i = 1; i < visiblePoints.length; i++) ctx.lineTo(visiblePoints[i].x, visiblePoints[i].y);
+        ctx.stroke();
+        // Bright orange line on top
+        ctx.strokeStyle = '#ffaa22';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(visiblePoints[0].x, visiblePoints[0].y);
+        for(let i = 1; i < visiblePoints.length; i++) ctx.lineTo(visiblePoints[i].x, visiblePoints[i].y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+      // Landing highlight
+      ctx.fillStyle = 'rgba(100,255,100,0.35)';
+      ctx.fillRect(GRID_LEFT + aimTargetCol * CELL_SIZE, GRID_TOP + landRow * CELL_SIZE, CELL_SIZE * 2, CELL_SIZE);
+      ctx.strokeStyle = 'rgba(100,255,100,0.8)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(GRID_LEFT + aimTargetCol * CELL_SIZE, GRID_TOP + landRow * CELL_SIZE, CELL_SIZE * 2, CELL_SIZE);
+    } else {
+      ctx.fillStyle = 'rgba(255,80,80,0.7)';
+      ctx.font = 'bold 28px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('X', GRID_LEFT + aimTargetCol * CELL_SIZE + CELL_SIZE / 2, GRID_TOP - 12);
+    }
+  }
+
+  // Sitting dog (bottom right) - hidden during squirrel attack
+  if(currentDog && !throwing && !dropping && gameRunning && !squirrelActive && !squirrelAlertActive) {
+    const img = dogSittingImages[currentDog.breed];
+    if(img && img.complete) {
+      const dogH = 380;
+      const dogW = dogH * (img.width / img.height);
+      ctx.drawImage(img, AIM_AREA_X - dogW / 2, H - dogH + 60, dogW, dogH);
+    }
+  }
+
+  // Throw animation
+  if(throwing && currentDog) {
+    updateThrowAnimation(now);
+    const elapsed = now - throwStartTime;
+    // Ball from bottom center
+    if(tennisLoaded && ballCurrentPos) {
+      const bT = Math.min(elapsed / throwBallDuration, 1.0);
+      const bSize = 22 * (3.0 - bT * 2.0);
+      ctx.drawImage(tennisImg, ballCurrentPos.x - bSize / 2, ballCurrentPos.y - bSize / 2, bSize, bSize);
+    }
+    // Dog from bottom right
+    if(elapsed > throwDogDelay && dogCurrentPos) {
+      const jumpImg = dogJumpingImages[currentDog.breed];
+      if(jumpImg && jumpImg.complete) {
+        const dE = Math.max(0, elapsed - throwDogDelay);
+        const dT = Math.min(dE / throwDogDuration, 1.0);
+        const dScale = 3.0 - dT * 2.0;
+        const finalH = CELL_SIZE * (1 + SPRITE_OVERFLOW);
+        const dH = finalH * dScale;
+        const dW = dH * (jumpImg.width / jumpImg.height);
+        ctx.drawImage(jumpImg, dogCurrentPos.x - dW / 2, dogCurrentPos.y - dH - 5, dW, dH);
+      }
+    }
+  }
+
+  // ---- CENTERED: Level title + Timer above grid ----
+  if(gameRunning) {
+    const lvl = LEVELS[currentLevel];
+    const secs = timeRemaining;
+    const centerX = W / 2;
+
+    // Level + Timer on same line: "Level 1    00:45"
+    const lineY = GRID_TOP - 14;
+    let timerColor = '#fff';
+    let timerScale = 1.0;
+    if(secs <= 5) {
+      timerColor = '#ff3333';
+      timerScale = 1 + 0.08 * Math.abs(Math.sin(now / 100 * Math.PI));
+    } else if(secs <= 15) {
+      timerColor = '#ff8800';
+      timerScale = 1 + 0.04 * Math.abs(Math.sin(now / 200 * Math.PI));
+    } else if(secs <= 30) {
+      timerColor = '#ffcc00';
+      timerScale = 1 + 0.02 * Math.abs(Math.sin(now / 400 * Math.PI));
+    }
+    // Level label (smaller, left of timer) - both bottom-aligned
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = '16px Arial';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('Level ' + (currentLevel + 1), centerX - 4, lineY);
+    // Timer (prominent, right of level) - scale around bottom-left anchor
+    ctx.save();
+    ctx.font = 'bold 30px Arial';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = timerColor;
+    // Scale from the baseline point so bottom stays aligned
+    const timerX = centerX + 4;
+    ctx.translate(timerX, lineY);
+    ctx.scale(timerScale, timerScale);
+    ctx.fillText(formatTime(secs), 0, 0);
+    ctx.restore();
+
+    // ---- TOP LEFT: Score + Acorns + Packs panel ----
+    const sX = 8, sY = 6;
+    const panW = 140, panH = 94;
+
+    // Panel background (warm golden)
+    ctx.save();
+    ctx.fillStyle = 'rgba(200,140,50,0.8)';
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = 6;
+    ctx.beginPath(); ctx.roundRect(sX, sY, panW, panH, 10); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(255,220,140,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.roundRect(sX, sY, panW, panH, 10); ctx.stroke();
+    ctx.restore();
+
+    // Score
+    const row1Y = sY + 18;
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 20px Arial';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('\u{1F3C6}', sX + 10, row1Y);
+    ctx.fillText(score.toLocaleString(), sX + 38, row1Y);
+
+    // Acorns
+    const row2Y = sY + 42;
+    ctx.font = 'bold 16px Arial';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('\u{1F330}', sX + 12, row2Y);
+    ctx.fillText(acorns + '/' + (lvl ? lvl.goal : '?'), sX + 38, row2Y);
+
+    // Pack stats
+    const row3Y = sY + 64;
+    ctx.font = 'bold 11px Arial';
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillText('Packs', sX + 10, row3Y);
+    const row4Y = sY + 80;
+    ctx.font = 'bold 12px Arial';
+    ctx.fillStyle = '#ffe080';
+    ctx.fillText('3:' + packStats[3] + ' 4:' + packStats[4] + ' 5:' + packStats[5], sX + 10, row4Y);
+  }
+
+  // ---- BOTTOM LEFT: Mute button (orange circle, matching map style) ----
+  {
+    const mbr = 25, mbcx = mbr + 12, mbcy = H - mbr - 12;
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = '#ff6b35';
+    ctx.beginPath(); ctx.arc(mbcx, mbcy, mbr, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = '18px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(musicMuted ? '\u{1F507}' : '\u{1F50A}', mbcx, mbcy);
+    ctx.restore();
+  }
+
+  // ---- BOTTOM RIGHT: Treats display ----
+  if(gameRunning) {
+    ctx.save();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 18px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    ctx.lineWidth = 3;
+    const treatText = '\u{1F9B4} x ' + treats;
+    const treatX = W - 55, treatY = H - 50;
+    ctx.strokeText(treatText, treatX, treatY);
+    ctx.fillText(treatText, treatX, treatY);
+    ctx.restore();
+  }
+
+  // Floating texts with rounded background
+  floatingTexts = floatingTexts.filter(ft => {
+    const t = (now - ft.startTime) / ft.duration;
+    if(t >= 1) return false;
+    const alpha = 1 - t;
+    const rise = t * 70;
+    const fontSize = ft.size || 24;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.font = 'bold ' + fontSize + 'px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const tx = ft.x, ty = ft.y - rise;
+    const metrics = ctx.measureText(ft.text);
+    const pw = metrics.width + 20, ph = fontSize + 12;
+    // Background
+    const bg = ft.bgColor || 'rgba(0,0,0,0.55)';
+    ctx.fillStyle = bg;
+    if(ft.bgColor) {
+      ctx.shadowColor = 'rgba(0,0,0,0.3)';
+      ctx.shadowBlur = 6;
+    }
+    ctx.beginPath();
+    ctx.roundRect(tx - pw / 2, ty - ph / 2, pw, ph, 8);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    // Text
+    ctx.fillStyle = ft.color || '#ffd700';
+    ctx.fillText(ft.text, tx, ty);
+    ctx.restore();
+    return true;
+  });
+
+  drawIris();
   requestAnimationFrame(draw);
 }
 
 // ============================================================
 // START
 // ============================================================
-draw();
-console.log("Dawg Pile Match-3 Ready!");
+loadProgress();
+currentLevel = completedLevels.indexOf(false);
+if(currentLevel < 0) currentLevel = 0;
+gameScreen = SCREEN.WELCOME;
+initGrid();
+requestAnimationFrame(draw);
 
 </script>
 </body>

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Dawg Pile</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div id="rotate-overlay">
+<div class="rotate-icon">📱</div>
+<p>Please rotate your device</p>
+</div>
+<div id="game">
+<canvas id="canvas" width="720" height="560"></canvas>
+<div id="ui" style="justify-content:flex-end;">
+<div style="display:none;"><div>&#x1F3C6; <span id="score">0</span></div><div>&#x1F330; <span id="acorns">0</span></div></div>
+</div>
+<div id="title-screen" class="overlay" style="display:none;"></div>
+<div id="level-start-screen" class="overlay" style="display:none;">
+<div id="level-scene" class="scene-label"></div>
+<h1 id="level-title">Level 1</h1>
+<p id="level-goal-text"></p>
+<button id="goBtn">GO!</button>
+</div>
+<div id="level-complete-screen" class="overlay" style="display:none;">
+<h1>&#x2B50; Level Complete! &#x2B50;</h1>
+<div class="stats" id="complete-stats"></div>
+<button id="nextLevelBtn">NEXT LEVEL</button>
+</div>
+<div id="level-failed-screen" class="overlay" style="display:none;">
+<h1>&#x2B50; Ruff Round! &#x2B50;</h1>
+<div class="stats" id="failed-stats"></div>
+<button id="retryBtn">TRY AGAIN</button>
+</div>
+<div id="gameover-screen" class="overlay" style="display:none;">
+<h1>GAME OVER</h1>
+<div class="stats" id="final-score">0</div>
+<button id="restartBtn">PLAY AGAIN</button>
+</div>
+</div>
+
+<!-- Load order matters: config first (globals), then utilities, then systems, then game loop -->
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/assets.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/grid.js"></script>
+<script src="js/dogs.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/matching.js"></script>
+<script src="js/throwing.js"></script>
+<script src="js/squirrel.js"></script>
+<script src="js/transitions.js"></script>
+<script src="js/levels.js"></script>
+<script src="js/input.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
