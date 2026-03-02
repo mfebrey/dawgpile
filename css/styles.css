@@ -75,6 +75,44 @@ button:hover{background:linear-gradient(180deg, #ffa060 0%, #ff8555 50%, #f06830
 button:active{transform:translateY(0);}
 @keyframes newBestPulse{0%{transform:scale(1);text-shadow:0 0 12px #ffaa00,0 0 24px #ff8800;}100%{transform:scale(1.15);text-shadow:0 0 20px #ffee00,0 0 40px #ffaa00,0 0 60px #ff6600;}}
 
+/* Breed roster on level start screen */
+#breed-roster{
+  display:flex;justify-content:center;align-items:flex-end;
+  gap:2px;margin:8px 0 4px;
+  width:520px;max-width:95%;
+  animation:fadeSlideIn 0.4s ease-out 0.25s both;
+}
+.breed-slot{
+  position:relative;display:flex;flex-direction:column;align-items:center;
+  width:50px;flex-shrink:0;
+}
+.breed-slot img{
+  width:46px;height:46px;object-fit:contain;
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,0.4));
+  transition:transform 0.2s;
+}
+.breed-slot.locked img{
+  filter:brightness(0) drop-shadow(0 2px 3px rgba(0,0,0,0.4));
+}
+.breed-slot .breed-mystery{
+  position:absolute;top:8px;left:50%;transform:translateX(-50%);
+  font-size:26px;font-weight:900;color:rgba(255,255,255,0.85);
+  text-shadow:0 2px 4px rgba(0,0,0,0.6);
+  pointer-events:none;
+}
+.breed-slot.unlocked .breed-name{
+  font-size:8px;color:rgba(255,255,255,0.8);text-align:center;
+  margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  max-width:50px;
+}
+.breed-slot.new-unlock img{
+  animation:newBreedPop 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.6s both;
+}
+@keyframes newBreedPop{
+  0%{transform:scale(0.3) rotate(-10deg);opacity:0;}
+  100%{transform:scale(1) rotate(0deg);opacity:1;}
+}
+
 /* Rotate overlay - show in LANDSCAPE on mobile to enforce portrait play */
 #rotate-overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#2a4858;z-index:99999;justify-content:center;align-items:center;flex-direction:column;}
 #rotate-overlay .rotate-icon{font-size:80px;margin-bottom:20px;animation:rotate-hint 2s ease-in-out infinite;}
