@@ -130,3 +130,16 @@ dogNames.forEach(name => {
   dogLyingImages[name] = new Image();
   dogLyingImages[name].src = 'img/dogs/lying/' + dogLyingFileMap[name] + '.webp';
 });
+
+const dogStandingImages = {};
+const dogStandingFileMap = {
+  'chihuahua': 'chihuahua-standing', 'corgi': 'corgi-standing',
+  'dachshund': 'dachshund-standing', 'frenchie': 'frenchie-standing',
+  'german-sheppard': 'german-standing', 'golden-retriever': 'golden-standing',
+  'husky': 'husky-standing', 'mutt': 'mutt-standing',
+  'poodle': 'poodle-standing', 'sheep-dog': 'sheepdog-standing'
+};
+dogNames.forEach(name => {
+  dogStandingImages[name] = new Image();
+  dogStandingImages[name].src = 'img/dogs/standing/' + dogStandingFileMap[name] + '.webp';
+});
