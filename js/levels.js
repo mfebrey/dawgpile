@@ -696,10 +696,6 @@ function levelComplete() {
     starLine += i < stars ? '\u{1F31F}' : '\u2606';
   }
 
-  const bestLine = isNewBest
-    ? '<div style="font-size:24px;margin:6px 0;color:#ffee00;text-align:center;text-shadow:0 0 12px #ffaa00,0 0 24px #ff8800;animation:newBestPulse 0.6s ease-in-out infinite alternate">NEW BEST!</div>'
-    : '<div style="font-size:16px;margin:4px 0;color:#ccc;text-align:center">Best: ' + highScores[currentLevel].toLocaleString() + '</div>';
-
   // Build "You earned" section for newly unlocked breed(s)
   let earnedHtml = '';
   const currentBreedCount = LEVELS[currentLevel].breeds;
@@ -715,17 +711,17 @@ function levelComplete() {
         const standingFile = (typeof dogStandingFileMap !== 'undefined' && dogStandingFileMap[b])
           ? dogStandingFileMap[b] : b + '-standing';
         const displayName = (typeof BREED_DISPLAY_NAMES !== 'undefined' && BREED_DISPLAY_NAMES[b]) || b;
-        return '<div style="display:flex;flex-direction:column;align-items:center;margin:0 6px">' +
-          '<img src="img/dogs/standing/' + standingFile + '.webp" style="width:60px;height:60px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));animation:newBreedPop 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.8s both">' +
-          '<div style="font-size:12px;color:rgba(255,255,255,0.85);margin-top:2px">' + displayName + '</div>' +
+        return '<div style="display:flex;flex-direction:column;align-items:center;margin:0 10px">' +
+          '<img src="img/dogs/standing/' + standingFile + '.webp" style="width:120px;height:120px;object-fit:contain;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.5));animation:newBreedPop 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.8s both">' +
+          '<div style="font-size:18px;font-weight:bold;color:rgba(255,255,255,0.9);margin-top:4px;text-shadow:0 1px 3px rgba(0,0,0,0.5)">' + displayName + '</div>' +
           '</div>';
       }).join('');
       const label = newBreeds.length === 1
         ? 'New breed unlocked!'
         : 'New breeds unlocked!';
       earnedHtml =
-        '<div style="margin:8px 0 2px;text-align:center">' +
-        '<div style="font-size:14px;color:#7fffaa;letter-spacing:1px;text-shadow:0 0 8px rgba(100,255,150,0.4);margin-bottom:4px">' + label + '</div>' +
+        '<div style="margin:10px 0 2px;text-align:center">' +
+        '<div style="font-size:22px;font-weight:bold;color:#7fffaa;letter-spacing:1px;text-shadow:0 0 12px rgba(100,255,150,0.5);margin-bottom:6px">' + label + '</div>' +
         '<div style="display:flex;justify-content:center;align-items:flex-end">' + breedImgs + '</div>' +
         '</div>';
     }
@@ -736,7 +732,6 @@ function levelComplete() {
     '<div style="font-size:14px;margin:2px 0;color:rgba(255,255,255,0.7);text-align:center;letter-spacing:1px">Scene 1: Bone Island</div>' +
     '<div style="font-size:22px;margin:2px 0;color:#fff;text-align:center">Level ' + (currentLevel + 1) + ': ' + name + '</div>' +
     '<div style="font-size:22px;margin:6px 0;color:#ffd700;text-align:center">\u{1F3C6} Score: ' + score.toLocaleString() + '</div>' +
-    bestLine +
     earnedHtml;
 
   document.getElementById('level-complete-screen').style.display = 'flex';
