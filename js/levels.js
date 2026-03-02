@@ -583,6 +583,36 @@ function showLevelStart() {
     ? '<div style="font-size:16px;margin:6px 0;color:#ffd700">Your Best: ' + best.toLocaleString() + '</div>'
     : '';
   document.getElementById('level-goal-text').innerHTML = bestText;
+
+  // Build breed roster
+  const unlockedCount = lvl.breeds;
+  const prevCount = currentLevel > 0 ? LEVELS[currentLevel - 1].breeds : 0;
+  const roster = document.getElementById('breed-roster');
+  roster.innerHTML = '';
+  for(let i = 0; i < BREED_ORDER.length; i++) {
+    const breed = BREED_ORDER[i];
+    const isUnlocked = i < unlockedCount;
+    const isNew = isUnlocked && i >= prevCount && currentLevel > 0;
+    const slot = document.createElement('div');
+    slot.className = 'breed-slot ' + (isUnlocked ? (isNew ? 'unlocked new-unlock' : 'unlocked') : 'locked');
+    const img = document.createElement('img');
+    img.src = 'img/dogs/standing/' + dogStandingFileMap[breed] + '.webp';
+    img.alt = breed;
+    slot.appendChild(img);
+    if(!isUnlocked) {
+      const q = document.createElement('div');
+      q.className = 'breed-mystery';
+      q.textContent = '?';
+      slot.appendChild(q);
+    } else {
+      const label = document.createElement('div');
+      label.className = 'breed-name';
+      label.textContent = BREED_DISPLAY_NAMES[breed] || breed;
+      slot.appendChild(label);
+    }
+    roster.appendChild(slot);
+  }
+
   document.getElementById('level-start-screen').style.display = 'flex';
   gameRunning = false;
   timerRunning = false;
@@ -666,12 +696,41 @@ function levelComplete() {
     ? '<div style="font-size:24px;margin:6px 0;color:#ffee00;text-align:center;text-shadow:0 0 12px #ffaa00,0 0 24px #ff8800;animation:newBestPulse 0.6s ease-in-out infinite alternate">NEW BEST!</div>'
     : '<div style="font-size:16px;margin:4px 0;color:#ccc;text-align:center">Best: ' + highScores[currentLevel].toLocaleString() + '</div>';
 
+  // Build "You earned" section for newly unlocked breed(s)
+  let earnedHtml = '';
+  const currentBreedCount = LEVELS[currentLevel].breeds;
+  const nextLevel = currentLevel + 1;
+  if(nextLevel < LEVELS.length) {
+    const nextBreedCount = LEVELS[nextLevel].breeds;
+    const newBreeds = [];
+    for(let i = currentBreedCount; i < nextBreedCount; i++) {
+      newBreeds.push(BREED_ORDER[i]);
+    }
+    if(newBreeds.length > 0) {
+      const breedImgs = newBreeds.map(b =>
+        '<div style="display:flex;flex-direction:column;align-items:center;margin:0 6px">' +
+        '<img src="img/dogs/standing/' + dogStandingFileMap[b] + '.webp" style="width:60px;height:60px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));animation:newBreedPop 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.8s both">' +
+        '<div style="font-size:12px;color:rgba(255,255,255,0.85);margin-top:2px">' + (BREED_DISPLAY_NAMES[b] || b) + '</div>' +
+        '</div>'
+      ).join('');
+      const label = newBreeds.length === 1
+        ? 'New breed unlocked!'
+        : 'New breeds unlocked!';
+      earnedHtml =
+        '<div style="margin:8px 0 2px;text-align:center">' +
+        '<div style="font-size:14px;color:#7fffaa;letter-spacing:1px;text-shadow:0 0 8px rgba(100,255,150,0.4);margin-bottom:4px">' + label + '</div>' +
+        '<div style="display:flex;justify-content:center;align-items:flex-end">' + breedImgs + '</div>' +
+        '</div>';
+    }
+  }
+
   document.getElementById('complete-stats').innerHTML =
     '<div style="font-size:40px;margin:6px 0;text-align:center">' + starLine + '</div>' +
     '<div style="font-size:14px;margin:2px 0;color:rgba(255,255,255,0.7);text-align:center;letter-spacing:1px">Scene 1: Bone Island</div>' +
     '<div style="font-size:22px;margin:2px 0;color:#fff;text-align:center">Level ' + (currentLevel + 1) + ': ' + name + '</div>' +
     '<div style="font-size:22px;margin:6px 0;color:#ffd700;text-align:center">\u{1F3C6} Score: ' + score.toLocaleString() + '</div>' +
-    bestLine;
+    bestLine +
+    earnedHtml;
 
   document.getElementById('level-complete-screen').style.display = 'flex';
   document.getElementById('nextLevelBtn').textContent =
