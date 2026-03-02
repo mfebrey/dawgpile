@@ -54,6 +54,19 @@ function resizeGame() {
   _gameEl.style.height = displayH + 'px';
   _gameEl.style.left = offsetX + 'px';
   _gameEl.style.top = offsetY + 'px';
+
+  // Scale overlay content to match canvas scaling
+  const scaleFactor = displayW / W;
+  document.querySelectorAll('.overlay').forEach(el => {
+    el.style.transform = 'scale(' + scaleFactor + ')';
+    el.style.transformOrigin = 'top left';
+    el.style.width = W + 'px';
+    el.style.height = H + 'px';
+    el.style.left = '0';
+    el.style.top = '0';
+    el.style.right = 'auto';
+    el.style.bottom = 'auto';
+  });
 }
 
 window.addEventListener('resize', resizeGame);
