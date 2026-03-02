@@ -127,8 +127,16 @@ function drawInstructionsScreen() {
   ctx.textBaseline = 'middle';
   ctx.fillText('HOW TO PLAY', W / 2, boxY + 38);
 
+  // Game objective
+  ctx.fillStyle = '#ffe066';
+  ctx.font = 'bold 16px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Line up 3 or more of the same breed vertically', W / 2, boxY + 66);
+  ctx.fillText('or horizontally to score points!', W / 2, boxY + 84);
+
   // Three panels
-  const panelY = boxY + 70;
+  const panelY = boxY + 100;
   const panelW = 150, panelH = 150;
   const panelGap = 30;
   const totalPanelW = panelW * 3 + panelGap * 2;
@@ -548,8 +556,7 @@ function showLevelStart() {
   const bestText = best > 0
     ? '<div style="font-size:16px;margin:6px 0;color:#ffd700">Your Best: ' + best.toLocaleString() + '</div>'
     : '';
-  document.getElementById('level-goal-text').innerHTML =
-    'Need ' + thresholds[0].toLocaleString() + ' pts to advance' + bestText;
+  document.getElementById('level-goal-text').innerHTML = bestText;
   document.getElementById('level-start-screen').style.display = 'flex';
   gameRunning = false;
   timerRunning = false;
