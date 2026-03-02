@@ -127,12 +127,25 @@ const SQUIRREL_ALERT_DURATION = 1000;
 // ============================================================
 // LEVEL DATA
 // ============================================================
+
+// Fixed breed unlock order (first 5 available at Level 1, one more each level)
+const BREED_ORDER = [
+  'golden-retriever', 'frenchie', 'corgi', 'husky', 'poodle',
+  'dachshund', 'german-sheppard', 'sheep-dog', 'chihuahua', 'mutt'
+];
+const BREED_DISPLAY_NAMES = {
+  'golden-retriever': 'Golden', 'frenchie': 'Frenchie', 'corgi': 'Corgi',
+  'husky': 'Husky', 'poodle': 'Poodle', 'dachshund': 'Dachshund',
+  'german-sheppard': 'German Shepherd', 'sheep-dog': 'Sheepdog',
+  'chihuahua': 'Chihuahua', 'mutt': 'Mutt'
+};
+
 const LEVELS = [
-  {time: 75, breeds: 3},
-  {time: 70, breeds: 4},
-  {time: 70, breeds: 4},
-  {time: 65, breeds: 5},
-  {time: 60, breeds: 6},
+  {time: 75, breeds: 5},
+  {time: 70, breeds: 6},
+  {time: 70, breeds: 7},
+  {time: 65, breeds: 8},
+  {time: 60, breeds: 10},
 ];
 const LEVEL_NAMES = ['Park', 'Forest', 'Pool', 'Desert', 'Base'];
 
