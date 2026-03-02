@@ -19,14 +19,14 @@ body {
   touch-action: none;
   font-family: 'Arial', sans-serif;
 }
-#game{position:absolute;}
+#game{position:absolute;overflow:hidden;}
 canvas{display:block;touch-action:none;-webkit-touch-callout:none;user-select:none;}
 #ui{position:absolute;top:8px;left:20px;right:20px;display:flex;justify-content:space-between;align-items:center;color:#fff;font-size:22px;font-weight:bold;text-shadow:2px 2px 4px rgba(0,0,0,0.5);pointer-events:none;}
-.overlay{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;justify-content:center;align-items:center;background:rgba(0,0,0,0.7);}
-.overlay h1{color:#fff;font-size:48px;margin-bottom:20px;text-shadow:3px 3px 6px rgba(0,0,0,0.8);text-align:center;}
+.overlay{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;justify-content:center;align-items:center;background:rgba(0,0,0,0.7);overflow:hidden;padding:10px;}
+.overlay h1{color:#fff;font-size:48px;margin-bottom:20px;text-shadow:3px 3px 6px rgba(0,0,0,0.8);text-align:center;max-width:100%;word-wrap:break-word;}
 .scene-label{color:rgba(255,255,255,0.7);font-size:16px;margin-bottom:4px;text-align:center;letter-spacing:1px;}
 .overlay p,.overlay .info{color:#fff;font-size:18px;margin-bottom:20px;text-align:center;max-width:500px;line-height:1.6;}
-.overlay .stats{color:#ffd700;font-size:24px;margin:10px 0;text-align:center;display:flex;flex-direction:column;align-items:center;}
+.overlay .stats{color:#ffd700;font-size:24px;margin:10px 0;text-align:center;display:flex;flex-direction:column;align-items:center;max-width:100%;}
 button{background:#ff6b35;color:#fff;border:none;padding:15px 40px;font-size:20px;font-weight:bold;border-radius:8px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.3);transition:all 0.2s;pointer-events:auto;}
 button:hover{background:#ff8555;transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,0.4);}
 button:active{transform:translateY(0);}
