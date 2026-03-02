@@ -711,9 +711,11 @@ function levelComplete() {
         const standingFile = (typeof dogStandingFileMap !== 'undefined' && dogStandingFileMap[b])
           ? dogStandingFileMap[b] : b + '-standing';
         const displayName = (typeof BREED_DISPLAY_NAMES !== 'undefined' && BREED_DISPLAY_NAMES[b]) || b;
-        return '<div style="display:flex;flex-direction:column;align-items:center;margin:0 10px">' +
-          '<img src="img/dogs/standing/' + standingFile + '.webp" style="width:120px;height:120px;object-fit:contain;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.5));animation:newBreedPop 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.8s both">' +
-          '<div style="font-size:18px;font-weight:bold;color:rgba(255,255,255,0.9);margin-top:4px;text-shadow:0 1px 3px rgba(0,0,0,0.5)">' + displayName + '</div>' +
+        return '<div style="display:flex;flex-direction:column;align-items:center;margin:0 10px;animation:newBreedPop 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.8s both">' +
+          '<div style="width:160px;height:160px;border-radius:50%;background:linear-gradient(180deg,#fff 0%,#ffe44d 30%,#ffb800 60%,#ff8c00 100%);display:flex;flex-direction:column;justify-content:center;align-items:center;box-shadow:0 4px 16px rgba(255,180,0,0.5),inset 0 2px 4px rgba(255,255,255,0.4);border:3px solid rgba(255,255,255,0.5)">' +
+          '<img src="img/dogs/standing/' + standingFile + '.webp" style="width:100px;height:100px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3))">' +
+          '<div style="font-size:14px;font-weight:bold;color:rgba(80,40,0,0.9);margin-top:-2px;text-shadow:0 1px 0 rgba(255,255,255,0.4)">' + displayName + '</div>' +
+          '</div>' +
           '</div>';
       }).join('');
       const label = newBreeds.length === 1
