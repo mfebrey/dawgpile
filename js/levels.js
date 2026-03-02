@@ -120,23 +120,49 @@ function drawInstructionsScreen() {
   ctx.beginPath(); ctx.roundRect(boxX, boxY, boxW, boxH, 16); ctx.stroke();
   ctx.restore();
 
-  // Title
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 32px Arial';
+  // Title - gold gradient with cartoon stroke (matches CSS overlay h1 style)
+  ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('HOW TO PLAY', W / 2, boxY + 38);
+  const titleY = boxY + 40;
+  const titleText = 'HOW TO PLAY';
+  ctx.font = 'italic 900 42px Arial';
 
-  // Game objective
-  ctx.fillStyle = '#ffe066';
-  ctx.font = 'bold 16px Arial';
+  // Dark stroke outline
+  ctx.strokeStyle = 'rgba(80,40,0,0.8)';
+  ctx.lineWidth = 6;
+  ctx.lineJoin = 'round';
+  ctx.strokeText(titleText, W / 2, titleY);
+
+  // Gold gradient fill
+  const titleGrad = ctx.createLinearGradient(0, titleY - 22, 0, titleY + 22);
+  titleGrad.addColorStop(0, '#fff');
+  titleGrad.addColorStop(0.3, '#ffe44d');
+  titleGrad.addColorStop(0.6, '#ffb800');
+  titleGrad.addColorStop(1, '#ff8c00');
+  ctx.fillStyle = titleGrad;
+  ctx.fillText(titleText, W / 2, titleY);
+
+  // Warm glow (draw behind, but we fake it with shadow on a second pass)
+  ctx.shadowColor = 'rgba(255,180,0,0.4)';
+  ctx.shadowBlur = 20;
+  ctx.fillText(titleText, W / 2, titleY);
+  ctx.restore();
+
+  // Game objective - bigger and bolder
+  ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('Line up 3 or more of the same breed vertically', W / 2, boxY + 66);
-  ctx.fillText('or horizontally to score points!', W / 2, boxY + 84);
+  ctx.font = 'bold 20px Arial';
+  ctx.shadowColor = 'rgba(0,0,0,0.5)';
+  ctx.shadowBlur = 4;
+  ctx.fillStyle = '#ffe066';
+  ctx.fillText('Pile up 3 or more of the same breed,', W / 2, boxY + 76);
+  ctx.fillText('vertical or horizontal, to earn stars and advance!', W / 2, boxY + 100);
+  ctx.restore();
 
   // Three panels
-  const panelY = boxY + 100;
+  const panelY = boxY + 125;
   const panelW = 150, panelH = 150;
   const panelGap = 30;
   const totalPanelW = panelW * 3 + panelGap * 2;
