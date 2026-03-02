@@ -588,29 +588,33 @@ function showLevelStart() {
   const unlockedCount = lvl.breeds;
   const prevCount = currentLevel > 0 ? LEVELS[currentLevel - 1].breeds : 0;
   const roster = document.getElementById('breed-roster');
-  roster.innerHTML = '';
-  for(let i = 0; i < BREED_ORDER.length; i++) {
-    const breed = BREED_ORDER[i];
-    const isUnlocked = i < unlockedCount;
-    const isNew = isUnlocked && i >= prevCount && currentLevel > 0;
-    const slot = document.createElement('div');
-    slot.className = 'breed-slot ' + (isUnlocked ? (isNew ? 'unlocked new-unlock' : 'unlocked') : 'locked');
-    const img = document.createElement('img');
-    img.src = 'img/dogs/standing/' + dogStandingFileMap[breed] + '.webp';
-    img.alt = breed;
-    slot.appendChild(img);
-    if(!isUnlocked) {
-      const q = document.createElement('div');
-      q.className = 'breed-mystery';
-      q.textContent = '?';
-      slot.appendChild(q);
-    } else {
-      const label = document.createElement('div');
-      label.className = 'breed-name';
-      label.textContent = BREED_DISPLAY_NAMES[breed] || breed;
-      slot.appendChild(label);
+  if(roster) {
+    roster.innerHTML = '';
+    for(let i = 0; i < BREED_ORDER.length; i++) {
+      const breed = BREED_ORDER[i];
+      const isUnlocked = i < unlockedCount;
+      const isNew = isUnlocked && i >= prevCount && currentLevel > 0;
+      const slot = document.createElement('div');
+      slot.className = 'breed-slot ' + (isUnlocked ? (isNew ? 'unlocked new-unlock' : 'unlocked') : 'locked');
+      const img = document.createElement('img');
+      const standingFile = (typeof dogStandingFileMap !== 'undefined' && dogStandingFileMap[breed])
+        ? dogStandingFileMap[breed] : breed + '-standing';
+      img.src = 'img/dogs/standing/' + standingFile + '.webp';
+      img.alt = breed;
+      slot.appendChild(img);
+      if(!isUnlocked) {
+        const q = document.createElement('div');
+        q.className = 'breed-mystery';
+        q.textContent = '?';
+        slot.appendChild(q);
+      } else {
+        const label = document.createElement('div');
+        label.className = 'breed-name';
+        label.textContent = (typeof BREED_DISPLAY_NAMES !== 'undefined' && BREED_DISPLAY_NAMES[breed]) || breed;
+        slot.appendChild(label);
+      }
+      roster.appendChild(slot);
     }
-    roster.appendChild(slot);
   }
 
   document.getElementById('level-start-screen').style.display = 'flex';
@@ -707,12 +711,15 @@ function levelComplete() {
       newBreeds.push(BREED_ORDER[i]);
     }
     if(newBreeds.length > 0) {
-      const breedImgs = newBreeds.map(b =>
-        '<div style="display:flex;flex-direction:column;align-items:center;margin:0 6px">' +
-        '<img src="img/dogs/standing/' + dogStandingFileMap[b] + '.webp" style="width:60px;height:60px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));animation:newBreedPop 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.8s both">' +
-        '<div style="font-size:12px;color:rgba(255,255,255,0.85);margin-top:2px">' + (BREED_DISPLAY_NAMES[b] || b) + '</div>' +
-        '</div>'
-      ).join('');
+      const breedImgs = newBreeds.map(b => {
+        const standingFile = (typeof dogStandingFileMap !== 'undefined' && dogStandingFileMap[b])
+          ? dogStandingFileMap[b] : b + '-standing';
+        const displayName = (typeof BREED_DISPLAY_NAMES !== 'undefined' && BREED_DISPLAY_NAMES[b]) || b;
+        return '<div style="display:flex;flex-direction:column;align-items:center;margin:0 6px">' +
+          '<img src="img/dogs/standing/' + standingFile + '.webp" style="width:60px;height:60px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));animation:newBreedPop 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.8s both">' +
+          '<div style="font-size:12px;color:rgba(255,255,255,0.85);margin-top:2px">' + displayName + '</div>' +
+          '</div>';
+      }).join('');
       const label = newBreeds.length === 1
         ? 'New breed unlocked!'
         : 'New breeds unlocked!';
